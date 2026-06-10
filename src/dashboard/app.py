@@ -350,6 +350,49 @@ def fetch_signals():
     return None
 
 
+@st.cache_data(ttl=60)   # short TTL — live price
+def fetch_live_price(ticker: str):
+    """Fetch live price data for a ticker via yfinance."""
+    try:
+        import yfinance as yf
+        t = yf.Ticker(ticker)
+        fi = t.fast_info
+        price       = float(fi.last_price)    if fi.last_price    is not None else None
+        prev_close  = float(fi.previous_close) if fi.previous_close is not None else None
+        mkt_cap     = fi.market_cap
+        volume      = fi.three_month_average_volume
+        if price is None:
+            return None
+        change      = price - prev_close if prev_close else 0.0
+        change_pct  = (change / prev_close * 100) if prev_close else 0.0
+        return {
+            "price":       price,
+            "prev_close":  prev_close,
+            "change":      change,
+            "change_pct":  change_pct,
+            "market_cap":  mkt_cap,
+            "volume":      volume,
+        }
+    except Exception as e:
+        logger.error(f"Error fetching live price for {ticker}: {e}")
+    return None
+
+
+@st.cache_data(ttl=300)
+def fetch_price_history(ticker: str, period: str = "5d", interval: str = "1h"):
+    """Fetch OHLCV history for a ticker via yfinance."""
+    try:
+        import yfinance as yf
+        hist = yf.Ticker(ticker).history(period=period, interval=interval)
+        if hist.empty:
+            return None
+        hist.index = hist.index.tz_localize(None) if hist.index.tzinfo else hist.index
+        return hist
+    except Exception as e:
+        logger.error(f"Error fetching price history for {ticker}: {e}")
+    return None
+
+
 # ─────────────────────────────────────────────
 # Helpers
 # ─────────────────────────────────────────────
@@ -536,7 +579,67 @@ def render_ticker_analysis():
     k4.metric("Negative", neg)
     k5.metric("Neutral", neu)
 
+    # ── Live Price Section ──────────────────────
     st.divider()
+    st.markdown('<div class="section-label">Current Price</div>', unsafe_allow_html=True)
+
+    price_data = fetch_live_price(ticker)
+    if price_data:
+        p  = price_data["price"]
+        ch = price_data["change"]
+        cp = price_data["change_pct"]
+        pc = price_data["prev_close"]
+        mc = price_data["market_cap"]
+        vol = price_data["volume"]
+
+        delta_str = f"{ch:+.2f}  ({cp:+.2f}%)"
+        p1, p2, p3, p4 = st.columns(4)
+        p1.metric("Current Price",  f"${p:,.2f}",  delta=delta_str,
+                  delta_color="normal" if ch >= 0 else "inverse")
+        p2.metric("Previous Close", f"${pc:,.2f}" if pc else "—")
+        p3.metric("Market Cap",
+                  f"${mc/1e12:.2f}T" if mc and mc >= 1e12
+                  else f"${mc/1e9:.1f}B" if mc and mc >= 1e9
+                  else f"${mc/1e6:.0f}M" if mc
+                  else "—")
+        p4.metric("Avg Volume (3M)",
+                  f"{vol/1e6:.1f}M" if vol and vol >= 1e6
+                  else f"{vol:,.0f}" if vol
+                  else "—")
+
+        # Price chart
+        hist = fetch_price_history(ticker, period="5d", interval="1h")
+        if hist is not None and not hist.empty:
+            fig_p = go.Figure(go.Candlestick(
+                x=hist.index,
+                open=hist["Open"],
+                high=hist["High"],
+                low=hist["Low"],
+                close=hist["Close"],
+                increasing=dict(line=dict(color="#22c55e", width=1.5),
+                                fillcolor="rgba(34,197,94,0.25)"),
+                decreasing=dict(line=dict(color="#ef4444", width=1.5),
+                                fillcolor="rgba(239,68,68,0.25)"),
+                hovertext=hist.index.strftime("%b %d %H:%M"),
+                name="Price",
+            ))
+            apply_chart_theme(fig_p, f"{ticker} — 5-Day Price (1h candles)", height=300)
+            fig_p.update_layout(
+                xaxis_rangeslider_visible=False,
+                xaxis=dict(
+                    tickfont=dict(family="JetBrains Mono", size=10),
+                    gridcolor="rgba(99,179,237,0.06)",
+                ),
+                yaxis=dict(
+                    tickprefix="$",
+                    tickfont=dict(family="JetBrains Mono", size=10),
+                ),
+            )
+            st.plotly_chart(fig_p, use_container_width=True, config={"displayModeBar": False})
+        else:
+            st.caption("Price chart unavailable — market may be closed or ticker not found on Yahoo Finance.")
+    else:
+        st.caption(f"Live price unavailable for {ticker}. Check that the symbol is valid on Yahoo Finance.")
 
     left, right = st.columns(2)
 
