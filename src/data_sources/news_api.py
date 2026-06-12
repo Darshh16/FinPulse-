@@ -147,34 +147,34 @@ def normalize_article(article: Dict) -> Dict:
     }
 
 
+# Target company search terms for NewsAPI
+_COMPANY_QUERY = (
+    "HDFC Bank OR SBI OR \"State Bank of India\" OR Trent OR DMart OR "
+    "\"Avenue Supermarts\" OR Siemens India OR \"ABB India\" OR "
+    "\"Maruti Suzuki\" OR Mahindra OR Microsoft OR Nvidia"
+)
+
+
 async def fetch_financial_news(
     query: str = None,
     days_back: int = 1
 ) -> List[Dict]:
     """
-    Fetch financial news articles
-    
-    Args:
-        query: Optional custom search query
-        days_back: Number of days back to search
-        
-    Returns:
-        List of normalized news articles
+    Fetch financial news articles from NewsAPI.
+    Uses a company-specific query targeting our fixed 10-stock universe.
     """
     if query is None:
-        query = settings.news_search_query
-    
+        query = _COMPANY_QUERY
+
     async with NewsAPIClient(settings.news_api_key) as client:
         articles = await client.fetch_news(
             query=query,
-            country=settings.news_country,
             sort_by=settings.news_sort_by,
             page_size=100
         )
-        
+
         normalized = [normalize_article(article) for article in articles]
-        logger.info(f"Normalized {len(normalized)} articles")
-        
+        logger.info(f"NewsAPI normalized {len(normalized)} articles (company-specific query)")
         return normalized
 
 
