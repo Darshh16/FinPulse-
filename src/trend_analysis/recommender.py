@@ -2,10 +2,8 @@
 Recommendation Engine — blends sentiment + trend based on article confidence.
 
 Formula:
-  If news_count >= 5:
-    recommendation_score = 0.70 * sentiment_score + 0.30 * trend_score
-  If news_count < 5:
-    recommendation_score = 1.00 * trend_score
+  recommendation_score = sentiment_score
+  (Trend is evaluated entirely separately on the frontend based on trend_score)
 
 Labels:
   BUY  → recommendation_score > buy_threshold
@@ -68,15 +66,8 @@ class Recommender:
         """
         confidence = self.get_confidence_level(news_count)
 
-        if confidence in ("High", "Medium"):
-            # Sentiment is reliable enough to heavily weight
-            sent_w, trend_w = 0.70, 0.30
-            recommendation_score = 0.70 * sentiment_score + 0.30 * trend_score
-        else:
-            # Low confidence: Sentiment is unreliable (very few articles).
-            # Fall back to 100% trend score to guide the recommendation.
-            sent_w, trend_w = 0.0, 1.0
-            recommendation_score = 1.00 * trend_score
+        # Pure sentiment recommendation (no mixing with trend)
+        recommendation_score = sentiment_score
 
         # Label
         if recommendation_score > self.buy_threshold:
@@ -90,6 +81,4 @@ class Recommender:
             "confidence_level":     confidence,
             "recommendation_score": round(recommendation_score, 4),
             "recommendation_label": label,
-            "sentiment_weight":     sent_w,
-            "trend_weight":         trend_w,
         }

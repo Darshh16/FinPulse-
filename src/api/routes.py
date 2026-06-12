@@ -29,7 +29,7 @@ def get_news(
     ticker: Optional[str] = Query(None),
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
-    days: int = Query(7, ge=1, le=30)
+    days: int = Query(7, ge=1, le=90)
 ):
     """Get financial news headlines with source weight and URL."""
     db_session = get_db_session()
@@ -132,7 +132,7 @@ def get_ticker_data(symbol: str, days: int = Query(7, ge=1, le=30)):
 
 
 @router.get("/sentiment/{symbol}")
-def get_sentiment(symbol: str, days: int = Query(7, ge=1, le=30), window: str = Query("1h")):
+def get_sentiment(symbol: str, days: int = Query(7, ge=1, le=90), window: str = Query("1h")):
     """Get sentiment analysis for a ticker, including weighted_sentiment and contributing_articles."""
     db_session = get_db_session()
     try:
@@ -146,25 +146,50 @@ def get_sentiment(symbol: str, days: int = Query(7, ge=1, le=30), window: str = 
         if not aggregates:
             raise HTTPException(status_code=404, detail=f"No sentiment data for {symbol}")
 
+        import math
+        def safe_float(v):
+            if v is None: return None
+            try:
+                f = float(v)
+                return 0.0 if math.isnan(f) or math.isinf(f) else f
+            except:
+                return None
+
+        # Fetch actual distinct article counts to avoid double-counting overlapping aggregates
+        real_stats = db_session.query(NewsHeadline.sentiment_label, func.count(NewsHeadline.id)).filter(
+            NewsHeadline.ticker == symbol, NewsHeadline.timestamp >= start_time
+        ).group_by(NewsHeadline.sentiment_label).all()
+        
+        pos_cnt = sum(cnt for lbl, cnt in real_stats if lbl == 'positive')
+        neg_cnt = sum(cnt for lbl, cnt in real_stats if lbl == 'negative')
+        neu_cnt = sum(cnt for lbl, cnt in real_stats if lbl == 'neutral')
+        total_cnt = pos_cnt + neg_cnt + neu_cnt
+
         return {
             "ticker": symbol,
             "name":   get_ticker_name(symbol),
             "sector": get_ticker_sector(symbol),
             "window": window,
+            "overall": {
+                "total": total_cnt,
+                "positive": pos_cnt,
+                "negative": neg_cnt,
+                "neutral": neu_cnt
+            },
             "data": [
                 {
                     "timestamp":             a.window_start,
-                    "avg_sentiment":         a.avg_sentiment,
-                    "weighted_sentiment":    getattr(a, "weighted_sentiment", a.avg_sentiment),
+                    "avg_sentiment":         safe_float(a.avg_sentiment),
+                    "weighted_sentiment":    safe_float(getattr(a, "weighted_sentiment", a.avg_sentiment)),
                     "positive_count":        a.positive_count,
                     "negative_count":        a.negative_count,
                     "neutral_count":         a.neutral_count,
                     "news_count":            a.news_count,
                     "contributing_articles": getattr(a, "contributing_articles", []) or [],
                     "confidence_level":      getattr(a, "confidence_level", None),
-                    "trend_score":           getattr(a, "trend_score", None),
+                    "trend_score":           safe_float(getattr(a, "trend_score", None)),
                     "price_momentum":        getattr(a, "price_momentum", None),
-                    "recommendation_score":  getattr(a, "recommendation_score", None),
+                    "recommendation_score":  safe_float(getattr(a, "recommendation_score", None)),
                     "recommendation_label":  getattr(a, "recommendation_label", None),
                 }
                 for a in aggregates
@@ -177,7 +202,7 @@ def get_sentiment(symbol: str, days: int = Query(7, ge=1, le=30), window: str = 
 
 
 @router.get("/correlation/{symbol}")
-def get_correlation(symbol: str, days: int = Query(7, ge=1, le=30)):
+def get_correlation(symbol: str, days: int = Query(7, ge=1, le=90)):
     """Get sentiment-price correlation for a ticker."""
     db_session = get_db_session()
     try:
@@ -194,8 +219,11 @@ def get_correlation(symbol: str, days: int = Query(7, ge=1, le=30)):
         sentiments = [a.avg_sentiment for a in alignments]
         prices = [a.price_change_percent for a in alignments]
 
+        import math
         from numpy import corrcoef
         correlation = float(corrcoef(sentiments, prices)[0, 1])
+        if math.isnan(correlation):
+            correlation = 0.0
 
         return {
             "ticker":         symbol,
@@ -218,7 +246,7 @@ def get_correlation(symbol: str, days: int = Query(7, ge=1, le=30)):
 
 
 @router.get("/signals")
-def get_trading_signals(days: int = Query(7, ge=1, le=30)):
+def get_trading_signals(days: int = Query(7, ge=1, le=90)):
     """
     Sentiment-based trading signals for the fixed universe.
     Educational purposes only — not investment advice.
@@ -227,17 +255,35 @@ def get_trading_signals(days: int = Query(7, ge=1, le=30)):
     try:
         start_time = datetime.utcnow() - timedelta(days=days)
 
-        recent_data = db_session.query(AggregatedSentiment).filter(
-            AggregatedSentiment.window_start >= start_time
-        ).order_by(AggregatedSentiment.avg_sentiment.desc()).limit(100).all()
-
         signals = []
-        seen_tickers = set()
 
-        for data in recent_data:
-            if data.ticker in seen_tickers:
+        for ticker in ALL_TICKERS:
+            data = db_session.query(AggregatedSentiment).filter(
+                and_(
+                    AggregatedSentiment.ticker == ticker,
+                    AggregatedSentiment.window_start >= start_time
+                )
+            ).order_by(AggregatedSentiment.window_start.desc()).first()
+
+            if not data:
+                signals.append({
+                    "ticker":               ticker,
+                    "name":                 get_ticker_name(ticker),
+                    "sector":               get_ticker_sector(ticker),
+                    "signal":               "HOLD",
+                    "strength":             0.0,
+                    "confidence":           0.0,
+                    "sentiment":            0.0,
+                    "news_count":           0,
+                    "confidence_level":     "Low",
+                    "trend_score":          None,
+                    "price_momentum":       "stable",
+                    "recommendation_score": None,
+                    "recommendation_label": None,
+                    "timestamp":            datetime.utcnow(),
+                    "disclaimer":           "Educational only. Not financial advice.",
+                })
                 continue
-            seen_tickers.add(data.ticker)
 
             # Use recommendation_label if available, fall back to sentiment-based
             rec_label = getattr(data, "recommendation_label", None)
@@ -295,42 +341,43 @@ def get_dashboard_summary():
     try:
         start_time = datetime.utcnow() - timedelta(days=7)
 
-        total_news = db_session.query(func.count(NewsHeadline.id)).filter(
-            NewsHeadline.timestamp >= start_time
-        ).scalar()
-
-        total_tickers = db_session.query(func.count(func.distinct(NewsHeadline.ticker))).filter(
-            and_(NewsHeadline.timestamp >= start_time, NewsHeadline.ticker.isnot(None))
-        ).scalar()
-
-        avg_sent = db_session.query(func.avg(NewsHeadline.sentiment_score)).filter(
-            NewsHeadline.timestamp >= start_time
-        ).scalar() or 0.0
-
         top_tickers_raw = db_session.query(
             NewsHeadline.ticker,
             func.count(NewsHeadline.id).label("count"),
             func.avg(NewsHeadline.sentiment_score).label("avg_sentiment")
         ).filter(
             and_(NewsHeadline.timestamp >= start_time, NewsHeadline.ticker.isnot(None))
-        ).group_by(NewsHeadline.ticker).order_by(func.count(NewsHeadline.id).desc()).limit(20).all()
+        ).group_by(NewsHeadline.ticker).all()
+
+        counts_by_ticker = {t[0]: (t[1], float(t[2]) if t[2] else 0.0) for t in top_tickers_raw}
+
+        total_news = sum(cnt for cnt, _ in counts_by_ticker.values())
+        if total_news > 0:
+            avg_sent = sum(cnt * avg for cnt, avg in counts_by_ticker.values()) / total_news
+        else:
+            avg_sent = 0.0
+
+        top_tickers = []
+        for ticker in ALL_TICKERS:
+            cnt, avg = counts_by_ticker.get(ticker, (0, 0.0))
+            top_tickers.append({
+                "ticker":        ticker,
+                "name":          get_ticker_name(ticker),
+                "sector":        get_ticker_sector(ticker),
+                "news_count":    cnt,
+                "avg_sentiment": avg,
+            })
+
+        # Sort by news count descending
+        top_tickers.sort(key=lambda x: x["news_count"], reverse=True)
 
         return {
             "summary": {
                 "total_news_24h":      total_news,
-                "total_tickers_24h":   total_tickers,
+                "total_tickers_24h":   len(ALL_TICKERS),
                 "avg_sentiment_24h":   float(avg_sent),
             },
-            "top_tickers": [
-                {
-                    "ticker":        t[0],
-                    "name":          get_ticker_name(t[0]),
-                    "sector":        get_ticker_sector(t[0]),
-                    "news_count":    t[1],
-                    "avg_sentiment": float(t[2]) if t[2] else 0.0,
-                }
-                for t in top_tickers_raw
-            ]
+            "top_tickers": top_tickers
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

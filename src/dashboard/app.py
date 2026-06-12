@@ -42,232 +42,638 @@ def fmt_ist(dt) -> str:
 # ─────────────────────────────────────────────
 st.set_page_config(
     page_title="FinPulse — Sentiment Intelligence",
-    page_icon="",
+    page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 # ─────────────────────────────────────────────
-# Premium CSS
+# NEW UI — Design System
+# Palette: Obsidian black + Electric amber + Ice white
+# Type: DM Mono (data) + Inter (UI) — terminal-meets-trading-floor
+# Signature: Amber "ticker tape" accent line that runs through every card
 # ─────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Mono:ital,wght@0,300;0,400;0,500&display=swap');
 
-/* Base Theme */
-html, body, [class*="css"] { font-family: 'Outfit', sans-serif; color: #e4e4e7; }
-.main .block-container { padding: 2.5rem 3rem 4rem; max-width: 1500px; }
-.stApp { background: #09090b; } /* Deep zinc */
+/* ── TOKENS ─────────────────────────────────────────── */
+:root {
+  /* Deep purple background system matching screenshot */
+  --bg-base:      #0D0B1E;
+  --bg-mid:       #12102A;
+  --bg-panel:     #16133A;
+  --glass:        rgba(255,255,255,0.035);
+  --glass-hover:  rgba(255,255,255,0.06);
+  --glass-border: rgba(255,255,255,0.08);
+  --glass-border-bright: rgba(255,255,255,0.15);
 
-/* Sidebar */
-[data-testid="stSidebar"] { background: rgba(9, 9, 11, 0.85); backdrop-filter: blur(12px); border-right: 1px solid rgba(255, 255, 255, 0.05); }
-[data-testid="stSidebar"] .block-container { padding: 2rem 1.2rem; }
+  /* Purple accent — the hero color from the screenshot */
+  --purple:       #7C5CFC;
+  --purple-light: #A78BFA;
+  --purple-dim:   rgba(124,92,252,0.15);
+  --purple-mid:   rgba(124,92,252,0.4);
+  --purple-glow:  rgba(124,92,252,0.25);
 
-/* Typography */
-h1 { font-size: 2.2rem !important; font-weight: 700 !important; letter-spacing: -0.02em; color: #fafafa !important; }
-h2 { font-size: 1.5rem !important; font-weight: 600 !important; color: #f4f4f5 !important; letter-spacing: -0.01em; }
-h3 { font-size: 1.1rem !important; font-weight: 500 !important; color: #a1a1aa !important; }
+  /* Secondary accent — cyan highlight */
+  --cyan:         #22D3EE;
+  --cyan-dim:     rgba(34,211,238,0.12);
 
-/* Entrance Animations */
-@keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(15px); }
-    to { opacity: 1; transform: translateY(0); }
+  /* Semantic colors */
+  --green:  #10B981;
+  --red:    #EF4444;
+  --yellow: #F59E0B;
+  --blue:   #3B82F6;
+
+  /* Text */
+  --text-primary:   #F1F0FF;
+  --text-secondary: #9B96C9;
+  --text-muted:     #5B578A;
+
+  /* Font stacks */
+  --mono: 'DM Mono', monospace;
+  --sans: 'Inter', sans-serif;
 }
-.stMarkdown, [data-testid="stMetric"], .news-card, .insight-card {
-    animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+
+/* ── RESET / BASE ───────────────────────────────────── */
+html, body, [class*="css"] {
+  font-family: var(--sans);
+  color: var(--text-primary);
+}
+.main .block-container {
+  padding: 2rem 2.5rem 4rem;
+  max-width: 1600px;
+}
+.stApp {
+  background: linear-gradient(135deg, #0D0B1E 0%, #12102A 40%, #0D0E2E 100%);
+  background-attachment: fixed;
+}
+/* Subtle radial glow behind everything like the screenshot */
+.stApp::before {
+  content: '';
+  position: fixed;
+  top: -20%;
+  left: 30%;
+  width: 60%;
+  height: 60%;
+  background: radial-gradient(ellipse, rgba(124,92,252,0.12) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
 }
 
-/* Metrics Cards */
+/* ── SIDEBAR ────────────────────────────────────────── */
+[data-testid="stSidebar"] {
+  background: rgba(10,8,28,0.95);
+  backdrop-filter: blur(24px);
+  border-right: 1px solid var(--glass-border);
+}
+[data-testid="stSidebar"] .block-container {
+  padding: 1.6rem 1.1rem;
+}
+
+/* Sidebar logo — FinPulse brand mark */
+.fp-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 2rem;
+  padding: 0.5rem 0.4rem;
+}
+.fp-logo-icon {
+  width: 34px;
+  height: 34px;
+  background: var(--purple-dim);
+  border: 1px solid var(--purple-mid);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  color: var(--purple-light);
+}
+.fp-logo-mark {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+.fp-logo-sub {
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  line-height: 1;
+}
+
+/* Sidebar stat blocks — glass pills like the screenshot */
+.fp-stat {
+  padding: 0.8rem 1rem;
+  margin-bottom: 0.5rem;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  transition: background 0.2s, border-color 0.2s;
+}
+.fp-stat:hover {
+  background: var(--glass-hover);
+  border-color: var(--glass-border-bright);
+}
+.fp-stat-label {
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.3rem;
+}
+.fp-stat-value {
+  font-family: var(--mono);
+  font-size: 1.3rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+/* Sidebar section label */
+.fp-sidebar-section {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 0 0.4rem 0.4rem;
+  border-bottom: 1px solid var(--glass-border);
+  margin: 1.2rem 0 0.7rem;
+}
+
+/* Status dot */
+@keyframes pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.6); }
+  50%      { box-shadow: 0 0 0 4px rgba(16,185,129,0); }
+}
+.fp-dot {
+  display: inline-block;
+  width: 7px; height: 7px;
+  background: var(--green);
+  border-radius: 50%;
+  margin-right: 7px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* ── TYPOGRAPHY ─────────────────────────────────────── */
+h1,h2,h3 { font-family: var(--sans) !important; }
+h1 { font-size: 2rem !important; font-weight: 700 !important; color: var(--text-primary) !important; letter-spacing: -0.03em; }
+h2 { font-size: 1.3rem !important; font-weight: 600 !important; color: var(--text-primary) !important; }
+h3 { font-size: 0.88rem !important; font-weight: 500 !important; color: var(--text-secondary) !important; }
+
+/* Section eyebrow label — tight uppercase with fade line */
+.fp-eyebrow {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.fp-eyebrow::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, var(--glass-border-bright), transparent);
+}
+
+/* ── METRIC CARDS — glassmorphism like screenshot ───── */
 [data-testid="stMetric"] {
-    background: rgba(24, 24, 27, 0.6);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.08); 
-    border-radius: 16px;
-    padding: 1.2rem 1.5rem; 
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    transition: all 0.3s ease;
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 1.2rem 1.4rem;
+  transition: background 0.25s, border-color 0.25s, transform 0.25s;
+  position: relative;
+  overflow: hidden;
 }
-[data-testid="stMetric"]:hover { 
-    border-color: rgba(6, 182, 212, 0.4); /* Cyan glow */
-    transform: translateY(-3px);
-    box-shadow: 0 10px 25px -5px rgba(6, 182, 212, 0.15);
+/* Subtle purple top glow on each card */
+[data-testid="stMetric"]::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--purple-mid), transparent);
 }
-[data-testid="stMetricLabel"] { font-size: 0.75rem!important; font-weight: 500!important; letter-spacing: 0.08em; text-transform: uppercase; color: #a1a1aa!important; }
-[data-testid="stMetricValue"] { font-family: 'Fira Code', monospace!important; font-size: 1.8rem!important; font-weight: 600!important; color: #fafafa!important; }
-[data-testid="stMetricDelta"] { font-family: 'Fira Code', monospace!important; font-size: 0.85rem!important; }
-
-/* Tabs */
-[data-testid="stTabs"] [role="tablist"] { background: rgba(24, 24, 27, 0.8); border-radius: 12px; padding: 6px; border: 1px solid rgba(255, 255, 255, 0.05); gap: 4px; }
-[data-testid="stTabs"] [role="tab"] { font-size: 0.85rem; font-weight: 500; letter-spacing: 0.03em; color: #a1a1aa; border-radius: 8px; padding: 0.6rem 1.4rem; border: none; background: transparent; transition: all 0.3s ease; }
-[data-testid="stTabs"] [role="tab"][aria-selected="true"] { 
-    background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%); 
-    color: #22d3ee; 
-    border: 1px solid rgba(34, 211, 238, 0.3);
-    box-shadow: 0 0 15px rgba(6, 182, 212, 0.1); 
+[data-testid="stMetric"]:hover {
+  background: var(--glass-hover);
+  border-color: var(--glass-border-bright);
+  transform: translateY(-3px);
 }
-[data-testid="stTabs"] [role="tab"]:hover:not([aria-selected="true"]) { color: #f4f4f5; background: rgba(255, 255, 255, 0.05); }
-
-/* Buttons & Inputs */
-.stButton>button { 
-    background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%); 
-    color: #ffffff; border: none; border-radius: 10px; padding: 0.5rem 1.5rem; 
-    font-size: 0.85rem; font-weight: 600; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-    box-shadow: 0 4px 14px 0 rgba(6, 182, 212, 0.39); 
+[data-testid="stMetricLabel"] {
+  font-size: 0.65rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted) !important;
 }
-.stButton>button:hover { 
-    transform: translateY(-2px); 
-    box-shadow: 0 6px 20px rgba(6, 182, 212, 0.5); 
-    filter: brightness(1.1);
+[data-testid="stMetricValue"] {
+  font-family: var(--mono) !important;
+  font-size: 1.75rem !important;
+  font-weight: 500 !important;
+  color: var(--text-primary) !important;
 }
-.stSelectbox>div>div { background: #18181b!important; border: 1px solid rgba(255, 255, 255, 0.1)!important; border-radius: 10px!important; color: #fafafa!important; transition: border-color 0.2s; }
-.stSelectbox>div>div:hover { border-color: rgba(6, 182, 212, 0.4)!important; }
-
-/* Layout Utilities */
-hr { border: none; border-top: 1px solid rgba(255, 255, 255, 0.06); margin: 2rem 0; }
-.section-label { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: #22d3ee; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(34, 211, 238, 0.15); display: inline-block; }
-
-/* Dataframes */
-[data-testid="stDataFrame"] { border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; overflow: hidden; background: #18181b; }
-[data-testid="stDataFrame"] thead th { background: #09090b!important; color: #a1a1aa!important; font-size: 0.75rem!important; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 600!important; border-bottom: 1px solid rgba(255,255,255,0.05); }
-
-/* Sidebar Stats */
-.sidebar-stat { background: rgba(24, 24, 27, 0.5); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 1rem 1.2rem; margin-bottom: 0.8rem; transition: transform 0.2s; }
-.sidebar-stat:hover { transform: translateX(4px); border-color: rgba(139, 92, 246, 0.3); }
-.sidebar-stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: #a1a1aa; font-weight: 500; margin-bottom: 0.3rem; }
-.sidebar-stat-value { font-family: 'Fira Code', monospace; font-size: 1.4rem; font-weight: 600; color: #fafafa; }
-
-/* Legend & Badges */
-.legend-card { background: #18181b; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 1.2rem 1.5rem; margin: 1rem 0; }
-.legend-title { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #a1a1aa; margin-bottom: 0.8rem; }
-.legend-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.6rem; font-size: 0.85rem; }
-.badge { border-radius: 6px; padding: 0.2rem 0.7rem; font-family: 'Fira Code', monospace; font-size: 0.75rem; font-weight: 600; }
-.badge-buy  { background: rgba(16, 185, 129, 0.15);  color: #34d399; border: 1px solid rgba(16, 185, 129, 0.2); }
-.badge-sell { background: rgba(244, 63, 94, 0.15);  color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.2); }
-.badge-hold { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.2); }
-
-/* Insight Card */
-.insight-card { 
-    background: linear-gradient(160deg, #18181b 0%, #09090b 100%); 
-    border: 1px solid rgba(139, 92, 246, 0.2); 
-    border-radius: 16px; 
-    padding: 1.8rem 2rem; 
-    margin: 1.5rem 0; 
-    box-shadow: 0 10px 30px -10px rgba(139, 92, 246, 0.1);
-    position: relative;
-    overflow: hidden;
-}
-.insight-card::before {
-    content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
-    background: linear-gradient(to bottom, #06b6d4, #8b5cf6);
-}
-.insight-header { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: #22d3ee; margin-bottom: 0.8rem; }
-.insight-body { font-size: 0.95rem; color: #e4e4e7; line-height: 1.8; }
-.insight-rec { font-size: 1.1rem; font-weight: 600; margin-top: 1.2rem; }
-.insight-disclaimer { font-size: 0.75rem; color: #71717a; margin-top: 1rem; font-style: italic; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 0.8rem; }
-
-/* News Feed Cards */
-.news-card { 
-    background: #18181b; 
-    border: 1px solid rgba(255, 255, 255, 0.06); 
-    border-radius: 14px; 
-    padding: 1.2rem 1.5rem; 
-    margin-bottom: 1rem; 
-    transition: all 0.3s ease; 
-}
-.news-card:hover { 
-    border-color: rgba(6, 182, 212, 0.3); 
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px -8px rgba(0,0,0,0.5);
-}
-.news-headline { font-size: 0.95rem; font-weight: 500; color: #fafafa; line-height: 1.5; margin-bottom: 0.5rem; }
-.news-headline a:hover { color: #22d3ee !important; transition: color 0.2s; }
-.news-meta { font-size: 0.75rem; color: #a1a1aa; display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
-.news-score-pos { color: #34d399; font-family: 'Fira Code', monospace; font-weight: 500; }
-.news-score-neg { color: #fb7185; font-family: 'Fira Code', monospace; font-weight: 500; }
-.news-score-neu { color: #94a3b8; font-family: 'Fira Code', monospace; font-weight: 500; }
-.source-badge { background: rgba(34, 211, 238, 0.1); color: #22d3ee; border: 1px solid rgba(34, 211, 238, 0.2); border-radius: 6px; padding: 0.15rem 0.5rem; font-size: 0.7rem; font-weight: 600; font-family: 'Fira Code', monospace; }
-
-/* Pulse Animation for Status */
-@keyframes pulseGlow {
-    0% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.7); }
-    70% { box-shadow: 0 0 0 6px rgba(6, 182, 212, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
-}
-.status-dot { width: 8px; height: 8px; border-radius: 50%; background: #22d3ee; display: inline-block; margin-right: 8px; animation: pulseGlow 2s infinite; }
-
-/* Hero Banner */
-@keyframes gradientShift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+[data-testid="stMetricDelta"] {
+  font-family: var(--mono) !important;
+  font-size: 0.78rem !important;
 }
 
-@keyframes floatElement {
-    0% { transform: translateY(0px); }
-    50% { transform: translateY(-8px); }
-    100% { transform: translateY(0px); }
+/* ── TABS — pill style like screenshot nav ───────────── */
+[data-testid="stTabs"] [role="tablist"] {
+  background: rgba(0,0,0,0.3);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 5px;
+  gap: 3px;
+}
+[data-testid="stTabs"] [role="tab"] {
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  border-radius: 9px;
+  padding: 0.55rem 1.3rem;
+  border: none;
+  background: transparent;
+  transition: all 0.2s;
+}
+[data-testid="stTabs"] [role="tab"][aria-selected="true"] {
+  background: var(--purple-dim);
+  color: var(--purple-light);
+  border: 1px solid var(--purple-mid);
+  box-shadow: 0 0 16px var(--purple-glow);
+}
+[data-testid="stTabs"] [role="tab"]:hover:not([aria-selected="true"]) {
+  color: var(--text-secondary);
+  background: var(--glass);
 }
 
-.hero-container {
-    background: linear-gradient(-45deg, #09090b, #1e1b4b, #083344, #09090b);
-    background-size: 300% 300%;
-    animation: gradientShift 15s ease infinite;
-    border-radius: 24px;
-    padding: 3.5rem 4rem;
-    margin-bottom: 2.5rem;
-    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);
-    position: relative;
-    overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+/* ── BUTTONS ────────────────────────────────────────── */
+.stButton > button {
+  background: linear-gradient(135deg, var(--purple) 0%, #9B8AFC 100%);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 0.5rem 1.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: all 0.2s;
+  box-shadow: 0 4px 20px var(--purple-glow);
+}
+.stButton > button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 28px rgba(124,92,252,0.45);
+  filter: brightness(1.1);
 }
 
-.hero-container::before {
-    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    background: radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 40%),
-                radial-gradient(circle at 20% 80%, rgba(6, 182, 212, 0.15) 0%, transparent 40%);
-    pointer-events: none;
+/* ── INPUTS ─────────────────────────────────────────── */
+.stSelectbox > div > div,
+.stTextInput > div > div {
+  background: rgba(0,0,0,0.3) !important;
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 10px !important;
+  color: var(--text-primary) !important;
+  transition: border-color 0.2s;
+}
+.stSelectbox > div > div:hover,
+.stTextInput > div > div:hover {
+  border-color: var(--purple-mid) !important;
 }
 
-.hero-title {
-    font-size: 3.2rem !important;
-    font-weight: 800 !important;
-    letter-spacing: -0.03em;
-    background: linear-gradient(to right, #ffffff 20%, #22d3ee 60%, #a855f7 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin-bottom: 0.8rem;
-    position: relative;
-    z-index: 1;
-    animation: floatElement 6s ease-in-out infinite;
+/* ── DATAFRAME ──────────────────────────────────────── */
+[data-testid="stDataFrame"] {
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+}
+[data-testid="stDataFrame"] thead th {
+  background: rgba(0,0,0,0.4) !important;
+  color: var(--text-muted) !important;
+  font-size: 0.65rem !important;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600 !important;
+  border-bottom: 1px solid var(--glass-border);
 }
 
-.hero-subtitle {
-    font-size: 1.15rem;
-    color: #a1a1aa;
-    font-weight: 400;
-    letter-spacing: 0.01em;
-    position: relative;
-    z-index: 1;
-    max-width: 800px;
-    line-height: 1.6;
+/* ── DIVIDER ────────────────────────────────────────── */
+hr {
+  border: none;
+  border-top: 1px solid var(--glass-border);
+  margin: 1.8rem 0;
 }
 
-.hero-badge {
-    display: inline-flex;
-    align-items: center;
-    background: rgba(6, 182, 212, 0.1);
-    border: 1px solid rgba(34, 211, 238, 0.2);
-    color: #22d3ee;
-    padding: 0.4rem 1rem;
-    border-radius: 30px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    margin-bottom: 1.5rem;
-    position: relative;
-    z-index: 1;
-    backdrop-filter: blur(4px);
+/* ── HERO — deep dark panel like the screenshot ─────── */
+.fp-hero {
+  padding: 2.2rem 2.8rem;
+  margin-bottom: 2rem;
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+}
+/* Top purple gradient glow — matches screenshot header feel */
+.fp-hero::before {
+  content: '';
+  position: absolute;
+  top: -60px; left: -60px;
+  width: 300px; height: 200px;
+  background: radial-gradient(ellipse, rgba(124,92,252,0.3) 0%, transparent 70%);
+  pointer-events: none;
+}
+/* Right-side faint glow too */
+.fp-hero::after {
+  content: '';
+  position: absolute;
+  top: -40px; right: 5%;
+  width: 200px; height: 180px;
+  background: radial-gradient(ellipse, rgba(34,211,238,0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+.fp-hero-tag {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: var(--purple-light);
+  text-transform: uppercase;
+  margin-bottom: 0.9rem;
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.fp-hero-tag::before {
+  content: '';
+  width: 18px; height: 2px;
+  background: var(--purple-light);
+  border-radius: 2px;
+}
+.fp-hero-title {
+  font-size: 2.6rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  margin-bottom: 0.8rem;
+  position: relative;
+  z-index: 1;
+}
+.fp-hero-title span {
+  /* Purple-to-cyan gradient text like the screenshot headline */
+  background: linear-gradient(to right, var(--purple-light), var(--cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.fp-hero-desc {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+  max-width: 520px;
+  line-height: 1.65;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── LEGEND CARD ────────────────────────────────────── */
+.fp-legend {
+  background: var(--glass);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  padding: 1.2rem 1.5rem;
+  margin: 1rem 0;
+}
+.fp-legend-title {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+.fp-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.6rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+.fp-badge {
+  border-radius: 6px;
+  padding: 0.18rem 0.65rem;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  min-width: 44px;
+  text-align: center;
+}
+.fp-badge-buy  { background: rgba(16,185,129,0.12); color: #34D399; border: 1px solid rgba(16,185,129,0.2); }
+.fp-badge-sell { background: rgba(239,68,68,0.12);  color: #F87171; border: 1px solid rgba(239,68,68,0.2); }
+.fp-badge-hold { background: rgba(245,158,11,0.12); color: #FCD34D; border: 1px solid rgba(245,158,11,0.2); }
+
+/* ── INSIGHT CARD — glass panel ─────────────────────── */
+.fp-insight {
+  background: rgba(124,92,252,0.06);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(124,92,252,0.2);
+  border-radius: 16px;
+  padding: 1.6rem 1.8rem;
+  margin: 1.5rem 0;
+  position: relative;
+  overflow: hidden;
+}
+/* Purple accent strip top like a real card panel */
+.fp-insight::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(to right, var(--purple), var(--cyan), transparent);
+}
+.fp-insight-header {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--purple-light);
+  margin-bottom: 0.9rem;
+}
+.fp-insight-body {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.78;
+}
+.fp-insight-rec {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-top: 1.1rem;
+}
+.fp-insight-disclaimer {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 0.9rem;
+  font-style: italic;
+  border-top: 1px solid var(--glass-border);
+  padding-top: 0.75rem;
+}
+
+/* ── NEWS CARDS — layered dark panels ───────────────── */
+.fp-news {
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  padding: 1rem 1.4rem;
+  margin-bottom: 0.65rem;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+}
+.fp-news:hover {
+  background: var(--glass-hover);
+  border-color: var(--glass-border-bright);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+.fp-news-headline {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.55;
+  margin-bottom: 0.5rem;
+}
+.fp-news-headline a { color: inherit; text-decoration: none; }
+.fp-news-headline a:hover { color: var(--purple-light); }
+.fp-news-meta {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.fp-tag {
+  background: rgba(124,92,252,0.08);
+  border: 1px solid rgba(124,92,252,0.15);
+  border-radius: 5px;
+  padding: 0.12rem 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--purple-light);
+}
+.fp-score-pos { color: #34D399; font-family: var(--mono); font-weight: 500; }
+.fp-score-neg { color: #F87171; font-family: var(--mono); font-weight: 500; }
+.fp-score-neu { color: var(--text-muted); font-family: var(--mono); font-weight: 500; }
+
+/* ── ANOMALY CARD ───────────────────────────────────── */
+.fp-anomaly {
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 1rem 1.3rem;
+  margin-bottom: 0.8rem;
+}
+.fp-anomaly-title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.3rem;
+}
+.fp-anomaly-detail {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* ── GAINER CARD ────────────────────────────────────── */
+.fp-gainer {
+  background: rgba(16,185,129,0.06);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(16,185,129,0.18);
+  border-radius: 16px;
+  padding: 1.6rem;
+  text-align: center;
+}
+.fp-gainer-ticker {
+  font-family: var(--mono);
+  font-size: 1.45rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 0.4rem;
+}
+.fp-gainer-change {
+  font-family: var(--mono);
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: #34D399;
+}
+
+/* ── FOOTER ─────────────────────────────────────────── */
+.fp-footer-block {
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 1.2rem 1.4rem;
+}
+.fp-footer-title {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--purple-light);
+  margin-bottom: 0.6rem;
+}
+.fp-footer-text {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 2.1;
+}
+
+/* ── SCROLLBAR ──────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(124,92,252,0.3); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--purple); }
+
+/* ── TREND SUGGESTION BOX ───────────────────────────── */
+.fp-trend-box {
+  margin-top: 1rem;
+  padding: 1rem 1.3rem;
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+}
+.fp-trend-box-label {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.3rem;
+}
+.fp-trend-box-note {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  margin-top: 0.25rem;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -281,20 +687,18 @@ CHART_THEME = dict(
     template="plotly_dark",
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(family="Outfit, sans-serif", color="#a1a1aa", size=12),
+    font=dict(family="Inter, sans-serif", color="#5C6370", size=11),
     margin=dict(l=10, r=10, t=40, b=10),
-    xaxis=dict(gridcolor="rgba(255,255,255,0.03)", linecolor="rgba(255,255,255,0.08)"),
-    yaxis=dict(gridcolor="rgba(255,255,255,0.03)", linecolor="rgba(255,255,255,0.08)"),
-    hoverlabel=dict(bgcolor="#18181b", bordercolor="rgba(6,182,212,0.3)", font_size=12, font_family="Outfit"),
+    xaxis=dict(gridcolor="rgba(255,255,255,0.04)", linecolor="rgba(255,255,255,0.06)"),
+    yaxis=dict(gridcolor="rgba(255,255,255,0.04)", linecolor="rgba(255,255,255,0.06)"),
+    hoverlabel=dict(bgcolor="#131720", bordercolor="#F5A623", font_size=12, font_family="Inter"),
 )
 
-SENTIMENT_SCALE = [[0.0,"#ef4444"],[0.5,"#fbbf24"],[1.0,"#22c55e"]]
+SENTIMENT_SCALE = [[0.0,"#E74C3C"],[0.5,"#F39C12"],[1.0,"#2ECC71"]]
 
-# Buy/Sell/Hold thresholds (match routes.py)
 BUY_THRESHOLD  =  0.30
 SELL_THRESHOLD = -0.15
 
-# Fixed universe (from API)
 _UNIVERSE_CACHE = None
 
 def get_universe():
@@ -308,7 +712,6 @@ def get_universe():
             return _UNIVERSE_CACHE
     except Exception:
         pass
-    # Fallback hardcoded
     return {"universe": {
         "Banking (India)":       [{"ticker":"HDFCBANK.NS","name":"HDFC Bank"},{"ticker":"SBIN.NS","name":"State Bank of India"}],
         "Retail (India)":        [{"ticker":"TRENT.NS","name":"Trent"},{"ticker":"DMART.NS","name":"Avenue Supermarts (DMart)"}],
@@ -318,7 +721,6 @@ def get_universe():
     }}
 
 def get_ticker_options():
-    """Returns list of (display_label, ticker) tuples grouped by sector."""
     u = get_universe()
     options = []
     for sector, stocks in u.get("universe", {}).items():
@@ -327,7 +729,7 @@ def get_ticker_options():
     return options
 
 # ─────────────────────────────────────────────
-# Data fetchers
+# Data fetchers (unchanged)
 # ─────────────────────────────────────────────
 @st.cache_data(ttl=300)
 def fetch_dashboard_summary():
@@ -362,6 +764,27 @@ def fetch_correlation(ticker, days=7):
         if r.status_code == 200: return r.json()
     except Exception as e: logger.error(e)
     return None
+
+@st.cache_data(ttl=600)
+def fetch_top_indian_gainers():
+    try:
+        import yfinance as yf
+        import pandas as pd
+        nifty_tickers = [
+            "RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "ICICIBANK.NS", "BHARTIARTL.NS",
+            "INFY.NS", "ITC.NS", "SBIN.NS", "L&T.NS", "BAJFINANCE.NS",
+            "HINDUNILVR.NS", "AXISBANK.NS", "KOTAKBANK.NS", "TATAMOTORS.NS", "M&M.NS",
+            "SUNPHARMA.NS", "MARUTI.NS", "NTPC.NS", "ASIANPAINT.NS", "ULTRACEMCO.NS",
+            "POWERGRID.NS", "ONGC.NS", "TATASTEEL.NS", "COALINDIA.NS", "ADANIPORTS.NS"
+        ]
+        data = yf.download(nifty_tickers, period="2d", progress=False)["Close"]
+        if len(data) >= 2:
+            changes = ((data.iloc[-1] - data.iloc[-2]) / data.iloc[-2]) * 100
+            top2 = changes.nlargest(2)
+            return [{"ticker": t.replace(".NS", ""), "change": round(c, 2)} for t, c in top2.items() if pd.notna(c)]
+    except Exception as e:
+        logger.error(f"yfinance gainers error: {e}")
+    return []
 
 @st.cache_data(ttl=300)
 def fetch_signals():
@@ -401,9 +824,9 @@ def fetch_price_history(ticker: str, period="5d", interval="1h"):
 # Helpers
 # ─────────────────────────────────────────────
 def sentiment_color(score):
-    if score > BUY_THRESHOLD:  return "#22c55e"
-    if score < SELL_THRESHOLD: return "#ef4444"
-    return "#fbbf24"
+    if score > BUY_THRESHOLD:  return "#2ECC71"
+    if score < SELL_THRESHOLD: return "#E74C3C"
+    return "#F39C12"
 
 def signal_from_score(score: float) -> str:
     if score > BUY_THRESHOLD:  return "BUY"
@@ -412,26 +835,28 @@ def signal_from_score(score: float) -> str:
 
 def apply_chart_theme(fig, title="", height=380):
     fig.update_layout(**CHART_THEME,
-        title=dict(text=title, font=dict(size=13,color="#94a3b8"), x=0),
+        title=dict(text=title, font=dict(size=12, color="#5C6370"), x=0),
         height=height)
     return fig
 
 def render_legend():
-    """Render Buy/Sell/Hold legend as a styled HTML card."""
     st.markdown("""
-    <div class="legend-card">
-        <div class="legend-title">Signal Legend — How to Read Sentiment Scores</div>
-        <div class="legend-row"><span class="badge badge-buy">BUY</span>
-            <span style="color:#94a3b8">Score &gt; +0.30 &nbsp;|&nbsp; Strong positive news sentiment — consider reviewing for potential upside</span>
+    <div class="fp-legend">
+        <div class="fp-legend-title">Signal Reference — Sentiment Score Thresholds</div>
+        <div class="fp-legend-row">
+            <span class="fp-badge fp-badge-buy">BUY</span>
+            <span>Score &gt; +0.30 &nbsp;·&nbsp; Strong positive news sentiment — review for upside potential</span>
         </div>
-        <div class="legend-row"><span class="badge badge-hold">HOLD</span>
-            <span style="color:#94a3b8">Score &minus;0.15 to +0.30 &nbsp;|&nbsp; Mixed or neutral sentiment — wait for clearer signals</span>
+        <div class="fp-legend-row">
+            <span class="fp-badge fp-badge-hold">HOLD</span>
+            <span>Score −0.15 to +0.30 &nbsp;·&nbsp; Mixed or neutral — wait for clearer signals</span>
         </div>
-        <div class="legend-row"><span class="badge badge-sell">SELL</span>
-            <span style="color:#94a3b8">Score &lt; &minus;0.15 &nbsp;|&nbsp; Predominantly negative news — exercise caution</span>
+        <div class="fp-legend-row">
+            <span class="fp-badge fp-badge-sell">SELL</span>
+            <span>Score &lt; −0.15 &nbsp;·&nbsp; Predominantly negative news — exercise caution</span>
         </div>
-        <div style="font-size:0.7rem;color:#334155;margin-top:0.6rem">
-            Scores are weighted by source credibility: Reuters 1.0 &nbsp;&bull;&nbsp; CNBC 0.95 &nbsp;&bull;&nbsp; Yahoo Finance 0.90 &nbsp;&bull;&nbsp; NewsAPI 0.85
+        <div style="font-size:0.65rem;color:#2a3140;margin-top:0.7rem;font-family:'DM Mono',monospace">
+            SOURCE WEIGHTS &nbsp;·&nbsp; Reuters 1.00 &nbsp;·&nbsp; CNBC 0.95 &nbsp;·&nbsp; Yahoo Finance 0.90 &nbsp;·&nbsp; NewsAPI 0.85
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -440,117 +865,90 @@ def render_insight_card(ticker: str, name: str, score: float, pos: int, neg: int
                         total: int, days: int, trend: str = "stable",
                         confidence_level: str = None, trend_score: float = None,
                         price_momentum: str = None, rec_score: float = None, rec_label: str = None):
-    """Render an AI-generated insight card with confidence-aware recommendation."""
-    # Determine effective signal
     if rec_label:
         signal = rec_label
     else:
         signal = signal_from_score(score)
     col = sentiment_color(score)
 
-    # Build confidence-aware narrative
     conf = confidence_level or "Unknown"
     is_low_confidence = conf == "Low"
 
     if signal == "BUY":
         if is_low_confidence:
             rec_text = (
-                f"Only <b>{total}</b> relevant articles were found for <b>{name}</b> during the last <b>{days} days</b>. "
-                f"Sentiment confidence is <b style='color:#ef4444'>low</b>. "
-                f"The recommendation is primarily influenced by the stock's "
-                f"<b style='color:#22c55e'>positive 6-month price trend</b> "
-                f"(trend score: <b>{trend_score:+.3f}</b>)" if trend_score is not None else ""
-                f" and recent price momentum ({price_momentum or 'stable'})."
-                f"<br><br>Consider waiting for more news coverage before acting on this signal."
+                f"Only <b>{total}</b> relevant articles found for <b>{name}</b> over the last <b>{days} days</b>. "
+                f"Confidence is <b style='color:#E74C3C'>low</b>. "
+                f"Despite limited coverage, sentiment is <b style='color:#2ECC71'>positive</b> "
+                f"(score: <b>{score:+.3f}</b>). Consider waiting for broader coverage before acting."
             )
         else:
             rec_text = (
-                f"Sentiment analysis of <b>{total}</b> articles over the last <b>{days} days</b> shows "
-                f"a <b style='color:#22c55e'>strongly positive</b> outlook for <b>{name}</b> "
-                f"(sentiment: <b style='color:#22c55e'>{score:+.3f}</b>). "
+                f"Analysis of <b>{total}</b> articles over <b>{days} days</b> shows a "
+                f"<b style='color:#2ECC71'>strongly positive</b> outlook for <b>{name}</b> "
+                f"(score: <b style='color:#2ECC71'>{score:+.3f}</b>). "
                 f"Positive articles dominate ({pos} positive vs {neg} negative). "
+                f"Review recent earnings and sector trends before acting."
             )
-            if trend_score is not None:
-                rec_text += f"Price trend confirms the sentiment (trend: <b>{trend_score:+.3f}</b>). "
-            rec_text += "<br><br>Consider reviewing recent earnings, sector trends, and price action before acting."
-        rec_label_html = "<span style='color:#22c55e'>Recommendation: BUY (with due diligence)</span>"
+        rec_label_html = "<span style='color:#2ECC71'>Recommendation: BUY (with due diligence)</span>"
     elif signal == "SELL":
         if is_low_confidence:
             rec_text = (
-                f"Only <b>{total}</b> relevant articles were found for <b>{name}</b> during the last <b>{days} days</b>. "
-                f"Sentiment confidence is <b style='color:#ef4444'>low</b>. "
-                f"The recommendation is primarily influenced by the stock's "
-                f"<b style='color:#ef4444'>negative price trend</b> "
-                f"(trend score: <b>{trend_score:+.3f}</b>)" if trend_score is not None else ""
-                f" and recent price momentum ({price_momentum or 'stable'})."
-                f"<br><br>Exercise caution — limited news data reduces signal reliability."
+                f"Only <b>{total}</b> relevant articles found for <b>{name}</b> over the last <b>{days} days</b>. "
+                f"Confidence is <b style='color:#E74C3C'>low</b>. "
+                f"Despite limited coverage, sentiment is <b style='color:#E74C3C'>negative</b> "
+                f"(score: <b>{score:+.3f}</b>). Limited data reduces signal reliability."
             )
         else:
             rec_text = (
-                f"Sentiment analysis of <b>{total}</b> articles over the last <b>{days} days</b> shows "
-                f"a <b style='color:#ef4444'>predominantly negative</b> outlook for <b>{name}</b> "
-                f"(sentiment: <b style='color:#ef4444'>{score:+.3f}</b>). "
+                f"Analysis of <b>{total}</b> articles over <b>{days} days</b> shows a "
+                f"<b style='color:#E74C3C'>predominantly negative</b> outlook for <b>{name}</b> "
+                f"(score: <b style='color:#E74C3C'>{score:+.3f}</b>). "
                 f"Negative articles dominate ({neg} negative vs {pos} positive). "
+                f"Review recent news and fundamentals before making any decisions."
             )
-            if trend_score is not None:
-                rec_text += f"Price trend aligns with sentiment (trend: <b>{trend_score:+.3f}</b>). "
-            rec_text += "<br><br>Exercise caution — review recent news and fundamentals before making any decisions."
-        rec_label_html = "<span style='color:#ef4444'>Recommendation: SELL / CAUTION</span>"
+        rec_label_html = "<span style='color:#E74C3C'>Recommendation: SELL / CAUTION</span>"
     else:
         if is_low_confidence:
             rec_text = (
-                f"Only <b>{total}</b> relevant articles were found for <b>{name}</b> during the last <b>{days} days</b>. "
-                f"Sentiment confidence is <b style='color:#ef4444'>low</b>. "
-                f"Neither sentiment nor price trend provides a strong directional signal. "
-                f"<br><br>Consider waiting for more data before acting."
+                f"Only <b>{total}</b> relevant articles found for <b>{name}</b> over the last <b>{days} days</b>. "
+                f"Confidence is <b style='color:#E74C3C'>low</b>. "
+                f"Sentiment is <b style='color:#F39C12'>mixed or neutral</b> "
+                f"(score: <b>{score:+.3f}</b>). Wait for more data before acting."
             )
         else:
             rec_text = (
-                f"Sentiment analysis of <b>{total}</b> articles over the last <b>{days} days</b> shows "
-                f"a <b style='color:#fbbf24'>mixed or neutral</b> outlook for <b>{name}</b> "
-                f"(sentiment: <b style='color:#fbbf24'>{score:+.3f}</b>). "
-                f"News volume is balanced ({pos} positive, {neg} negative, {neu} neutral). "
+                f"Analysis of <b>{total}</b> articles over <b>{days} days</b> shows a "
+                f"<b style='color:#F39C12'>mixed or neutral</b> outlook for <b>{name}</b> "
+                f"(score: <b style='color:#F39C12'>{score:+.3f}</b>). "
+                f"Coverage is balanced ({pos} positive, {neg} negative, {neu} neutral). "
+                f"Wait for a stronger directional signal before acting."
             )
-            if trend_score is not None:
-                rec_text += f"Price trend is {'supporting' if trend_score > 0 else 'weakening'} (trend: <b>{trend_score:+.3f}</b>). "
-            rec_text += "<br><br>Consider waiting for a stronger directional signal before acting."
-        rec_label_html = "<span style='color:#fbbf24'>Recommendation: HOLD / MONITOR</span>"
+        rec_label_html = "<span style='color:#F39C12'>Recommendation: HOLD / MONITOR</span>"
 
-    trend_arrow = {"improving": "trending up", "declining": "trending down", "stable": "stable"}.get(trend, "stable")
-
-    # Build the confidence/weighting footer
-    weight_info = ""
-    if confidence_level:
-        sent_w = "70%" if confidence_level != "Low" else "30%"
-        trend_w = "30%" if confidence_level != "Low" else "70%"
-        weight_info = f"Signal weights: Sentiment <b>{sent_w}</b> + Trend <b>{trend_w}</b>"
-
-    conf_color = {"High": "#22c55e", "Medium": "#fbbf24", "Low": "#ef4444"}.get(str(confidence_level), "#94a3b8")
+    trend_arrow = {"improving": "trending up ↗", "declining": "trending down ↘", "stable": "stable →"}.get(trend, "stable →")
+    conf_color = {"High": "#2ECC71", "Medium": "#F39C12", "Low": "#E74C3C"}.get(str(confidence_level), "#5C6370")
     conf_display = confidence_level or '—'
-    weight_line = f'<br>{weight_info}' if weight_info else ''
 
-    card_html = f"""
-    <div class="insight-card">
-        <div class="insight-header">AI Insights — {name}</div>
-        <div class="insight-body">
+    st.markdown(f"""
+    <div class="fp-insight">
+        <div class="fp-insight-header">⚡ AI INSIGHTS — {name}</div>
+        <div class="fp-insight-body">
             {rec_text}
-            <div style='margin-top:0.5rem;font-size:0.8rem;color:#475569'>
-                Trend: <b style='color:#94a3b8'>{trend_arrow}</b> &nbsp;&bull;&nbsp;
-                Article volume: <b style='color:#94a3b8'>{total}</b> &nbsp;&bull;&nbsp;
-                Confidence: <b style='color:{conf_color}'>{conf_display}</b> &nbsp;&bull;&nbsp;
-                Lookback: <b style='color:#94a3b8'>{days} days</b>
-                {weight_line}
+            <div style='margin-top:0.6rem;font-size:0.75rem;color:#3C4558;font-family:"DM Mono",monospace'>
+                TREND: <span style='color:#5C6370'>{trend_arrow}</span> &nbsp;·&nbsp;
+                ARTICLES: <span style='color:#5C6370'>{total}</span> &nbsp;·&nbsp;
+                CONFIDENCE: <span style='color:{conf_color}'>{conf_display}</span> &nbsp;·&nbsp;
+                LOOKBACK: <span style='color:#5C6370'>{days}d</span>
             </div>
         </div>
-        <div class="insight-rec">{rec_label_html}</div>
-        <div class="insight-disclaimer">
-            This is an automated signal combining news sentiment and price trend for educational purposes only.
-            It does not constitute financial advice. Past patterns do not guarantee future price movement.
-            Always consult a registered financial advisor before investing.
+        <div class="fp-insight-rec">{rec_label_html}</div>
+        <div class="fp-insight-disclaimer">
+            Automated signal based on news sentiment for educational purposes only.
+            Not financial advice. Always consult a registered financial advisor before investing.
         </div>
     </div>
-    """
-    st.markdown(card_html, unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
 # Sidebar
@@ -558,55 +956,55 @@ def render_insight_card(ticker: str, name: str, score: float, pos: int, neg: int
 def render_sidebar():
     with st.sidebar:
         st.markdown("""
-        <div style='margin-bottom:1.5rem'>
-            <div style='font-size:1.35rem;font-weight:700;color:#f0f6ff;letter-spacing:-0.5px'>FinPulse</div>
-            <div style='font-size:0.72rem;color:#475569;letter-spacing:0.08em;text-transform:uppercase;margin-top:2px'>Sentiment Intelligence Platform</div>
+        <div class="fp-logo">
+            <span class="fp-logo-mark">FP/</span>
+            <span class="fp-logo-sub">Sentiment Intel</span>
         </div>
         """, unsafe_allow_html=True)
 
-        st.markdown('<div class="section-label">Live Statistics</div>', unsafe_allow_html=True)
+        st.markdown('<div class="fp-sidebar-section">Live Statistics</div>', unsafe_allow_html=True)
         summary = fetch_dashboard_summary()
         if summary:
             d = summary.get("summary", {})
             avg_sent = d.get("avg_sentiment_24h", 0.0)
             st.markdown(f"""
-            <div class="sidebar-stat">
-                <div class="sidebar-stat-label">Articles (7d)</div>
-                <div class="sidebar-stat-value">{d.get('total_news_24h', 0):,}</div>
+            <div class="fp-stat">
+                <div class="fp-stat-label">Articles (7d)</div>
+                <div class="fp-stat-value">{d.get('total_news_24h', 0):,}</div>
             </div>
-            <div class="sidebar-stat">
-                <div class="sidebar-stat-label">Active Tickers</div>
-                <div class="sidebar-stat-value">{d.get('total_tickers_24h', 0)}</div>
+            <div class="fp-stat">
+                <div class="fp-stat-label">Active Tickers</div>
+                <div class="fp-stat-value">{d.get('total_tickers_24h', 0)}</div>
             </div>
-            <div class="sidebar-stat">
-                <div class="sidebar-stat-label">Market Sentiment</div>
-                <div class="sidebar-stat-value" style="color:{sentiment_color(avg_sent)}">{avg_sent:+.3f}</div>
+            <div class="fp-stat">
+                <div class="fp-stat-label">Market Sentiment</div>
+                <div class="fp-stat-value" style="color:{sentiment_color(avg_sent)}">{avg_sent:+.3f}</div>
             </div>
             """, unsafe_allow_html=True)
         else:
             st.caption("API unavailable — start the backend server")
 
         st.divider()
-        st.markdown('<div class="section-label">Controls</div>', unsafe_allow_html=True)
-        if st.button("Refresh Data", use_container_width=True):
+        st.markdown('<div class="fp-sidebar-section">Controls</div>', unsafe_allow_html=True)
+        if st.button("↺  Refresh Data", use_container_width=True):
             st.cache_data.clear()
             st.rerun()
 
         st.divider()
-        st.markdown('<div class="section-label">Data Sources</div>', unsafe_allow_html=True)
+        st.markdown('<div class="fp-sidebar-section">Data Sources</div>', unsafe_allow_html=True)
         st.markdown("""
-        <div style='font-size:0.78rem;color:#475569;line-height:2.2'>
-        Reuters &nbsp;&mdash;&nbsp; weight 1.00<br>
-        CNBC &nbsp;&nbsp;&nbsp;&mdash;&nbsp; weight 0.95<br>
-        Yahoo Finance &mdash; weight 0.90<br>
-        NewsAPI &nbsp;&mdash;&nbsp; weight 0.85
+        <div style='font-family:"DM Mono",monospace;font-size:0.72rem;color:#3C4558;line-height:2.4'>
+        Reuters &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1.00<br>
+        CNBC &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0.95<br>
+        Yahoo Finance  0.90<br>
+        NewsAPI &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0.85
         </div>
         """, unsafe_allow_html=True)
 
         st.divider()
         st.markdown(f"""
-        <div style="font-size:0.7rem;color:#334155">
-            <span class="status-dot"></span>API Online &nbsp;|&nbsp;
+        <div style="font-size:0.65rem;color:#3C4558;font-family:'DM Mono',monospace">
+            <span class="fp-dot"></span>API ONLINE &nbsp;·&nbsp;
             {datetime.now(IST).strftime("%H:%M IST")}
         </div>""", unsafe_allow_html=True)
 
@@ -614,7 +1012,7 @@ def render_sidebar():
 # Tab 1 — Overview
 # ─────────────────────────────────────────────
 def render_overview():
-    st.markdown('<div class="section-label">Market Overview — Last 7 Days</div>', unsafe_allow_html=True)
+    st.markdown('<div class="fp-eyebrow">Market Overview — Last 7 Days</div>', unsafe_allow_html=True)
 
     summary = fetch_dashboard_summary()
     if summary and "summary" in summary:
@@ -633,33 +1031,36 @@ def render_overview():
 
     if summary.get("top_tickers"):
         df = pd.DataFrame(summary["top_tickers"])
-        st.markdown('<div class="section-label">Top Tickers by News Volume</div>', unsafe_allow_html=True)
+        st.markdown('<div class="fp-eyebrow">Top Tickers by News Volume</div>', unsafe_allow_html=True)
         col_chart, col_table = st.columns([3, 2])
         with col_chart:
-            # Prepare data for custom hover
             top_10 = df.head(10).copy()
-            # If name/sector isn't present, add it as a fallback
             if "name" not in top_10.columns:
                 top_10["name"] = top_10["ticker"]
             if "sector" not in top_10.columns:
                 top_10["sector"] = "Unknown"
-            
+
             fig = go.Figure(go.Bar(
                 x=top_10["ticker"], y=top_10["news_count"],
-                marker=dict(color=top_10["avg_sentiment"],colorscale=SENTIMENT_SCALE,cmin=-1,cmax=1,
-                    colorbar=dict(title=dict(text="Sentiment",font=dict(size=11)),thickness=12,len=0.7,
-                        tickfont=dict(family="Fira Code",size=10)),line=dict(color="rgba(0,0,0,0)",width=0)),
+                marker=dict(
+                    color=top_10["avg_sentiment"], colorscale=SENTIMENT_SCALE, cmin=-1, cmax=1,
+                    colorbar=dict(title=dict(text="Sentiment", font=dict(size=10)), thickness=10, len=0.65,
+                        tickfont=dict(family="DM Mono", size=9)),
+                    line=dict(color="rgba(0,0,0,0)", width=0)
+                ),
                 text=top_10["news_count"], textposition="outside",
-                textfont=dict(size=10,color="#a1a1aa",family="Fira Code"),
+                textfont=dict(size=10, color="#5C6370", family="DM Mono"),
                 customdata=top_10[["name", "sector", "avg_sentiment"]],
-                hovertemplate="<b>%{customdata[0]}</b> (%{x})<br>" +
-                              "Sector: %{customdata[1]}<br>" +
-                              "News Count: <b>%{y}</b> articles<br>" +
-                              "Avg Sentiment: <b>%{customdata[2]:+.3f}</b><extra></extra>",
+                hovertemplate=(
+                    "<b>%{customdata[0]}</b> (%{x})<br>"
+                    "Sector: %{customdata[1]}<br>"
+                    "Articles: <b>%{y}</b><br>"
+                    "Avg Sentiment: <b>%{customdata[2]:+.3f}</b><extra></extra>"
+                ),
             ))
             apply_chart_theme(fig, "Article Volume by Ticker", height=360)
-            fig.update_layout(xaxis=dict(tickfont=dict(family="Fira Code",size=11)),bargap=0.35)
-            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar":False})
+            fig.update_layout(xaxis=dict(tickfont=dict(family="DM Mono", size=11)), bargap=0.4)
+            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
         with col_table:
             display = df[["ticker","name","sector","news_count","avg_sentiment"]].copy() if "name" in df.columns else df[["ticker","news_count","avg_sentiment"]].copy()
@@ -670,7 +1071,6 @@ def render_overview():
                 display["Avg Sentiment"] = display["Avg Sentiment"].apply(lambda x: f"{x:+.4f}")
             st.dataframe(display, use_container_width=True, hide_index=True, height=360)
 
-    # ── Homepage Legend
     st.divider()
     render_legend()
 
@@ -679,7 +1079,7 @@ def render_overview():
 # Tab 2 — Ticker Analysis
 # ─────────────────────────────────────────────
 def render_ticker_analysis():
-    st.markdown('<div class="section-label">Ticker Deep Dive</div>', unsafe_allow_html=True)
+    st.markdown('<div class="fp-eyebrow">Ticker Deep Dive</div>', unsafe_allow_html=True)
 
     options = get_ticker_options()
     labels  = [o[0] for o in options]
@@ -689,7 +1089,7 @@ def render_ticker_analysis():
     with c1:
         selected_label = st.selectbox("Select Stock", labels, index=0)
     with c2:
-        days = st.slider("Lookback (days)", 1, 30, 7)
+        days = st.slider("Lookback (days)", 1, 90, 7)
 
     ticker = tickers[labels.index(selected_label)]
     name   = selected_label.split("[")[0].strip()
@@ -705,17 +1105,16 @@ def render_ticker_analysis():
     df["timestamp_ist"] = df["timestamp"].apply(lambda x: to_ist(x.to_pydatetime()))
     df = df.sort_values("timestamp")
 
-    pos   = int(df["positive_count"].sum())
-    neg   = int(df["negative_count"].sum())
-    neu   = int(df["neutral_count"].sum())
-    total = int(df["news_count"].sum())
-    # Use weighted_sentiment if available
+    overall = sentiment_data.get("overall", {})
+    pos   = overall.get("positive", int(df["positive_count"].sum()) if "positive_count" in df.columns else 0)
+    neg   = overall.get("negative", int(df["negative_count"].sum()) if "negative_count" in df.columns else 0)
+    neu   = overall.get("neutral", int(df["neutral_count"].sum()) if "neutral_count" in df.columns else 0)
+    total = overall.get("total", int(df["news_count"].sum()) if "news_count" in df.columns else 0)
     if "weighted_sentiment" in df.columns and df["weighted_sentiment"].notna().any():
         avg = float(df["weighted_sentiment"].mean())
     else:
         avg = float(df["avg_sentiment"].mean())
 
-    # ── Sentiment KPIs
     k1, k2, k3, k4, k5 = st.columns(5)
     k1.metric("Total Articles", f"{total:,}")
     k2.metric("Weighted Sentiment", f"{avg:+.3f}")
@@ -723,7 +1122,6 @@ def render_ticker_analysis():
     k4.metric("Negative", neg)
     k5.metric("Neutral", neu)
 
-    # ── Recommendation KPIs (from latest aggregation window)
     latest_row = df.iloc[-1] if len(df) > 0 else None
     conf_level = latest_row.get("confidence_level") if latest_row is not None and "confidence_level" in df.columns else None
     t_score = latest_row.get("trend_score") if latest_row is not None and "trend_score" in df.columns else None
@@ -731,70 +1129,59 @@ def render_ticker_analysis():
     rec_score = latest_row.get("recommendation_score") if latest_row is not None and "recommendation_score" in df.columns else None
     rec_label = latest_row.get("recommendation_label") if latest_row is not None and "recommendation_label" in df.columns else None
 
-    # Sanitize NaN values → None
     if t_score is not None and pd.isna(t_score): t_score = None
     if rec_score is not None and pd.isna(rec_score): rec_score = None
     if conf_level is not None and (isinstance(conf_level, float) and pd.isna(conf_level)): conf_level = None
     if p_momentum is not None and (isinstance(p_momentum, float) and pd.isna(p_momentum)): p_momentum = None
     if rec_label is not None and (isinstance(rec_label, float) and pd.isna(rec_label)): rec_label = None
 
-    if any(v is not None for v in [conf_level, t_score, rec_label]):
-        r1, r2, r3, r4, r5 = st.columns(5)
-        r1.metric("Confidence", conf_level or "—")
-        r2.metric("Trend Score", f"{t_score:+.3f}" if t_score is not None else "—")
-        mom_icon = {"improving": "📈", "deteriorating": "📉", "stable": "➡️"}.get(str(p_momentum), "")
-        r3.metric("Momentum", f"{mom_icon} {(p_momentum or '—').title()}")
-        r4.metric("Rec. Score", f"{rec_score:+.3f}" if rec_score is not None else "—")
-        r5.metric("Recommendation", rec_label or "—")
-
-    # ── Live Price Section
+    # ── Live Price
     st.divider()
-    st.markdown('<div class="section-label">Current Price</div>', unsafe_allow_html=True)
+    st.markdown('<div class="fp-eyebrow">Current Price</div>', unsafe_allow_html=True)
     price_data = fetch_live_price(ticker)
     if price_data:
         p, ch, cp, pc = price_data["price"], price_data["change"], price_data["change_pct"], price_data["prev_close"]
         mc, vol = price_data["market_cap"], price_data["volume"]
-        p1,p2,p3,p4 = st.columns(4)
+        p1, p2, p3, p4 = st.columns(4)
         p1.metric("Current Price", f"{'₹' if '.NS' in ticker else '$'}{p:,.2f}",
-                  delta=f"{ch:+.2f} ({cp:+.2f}%)", delta_color="normal" if ch>=0 else "inverse")
+                  delta=f"{ch:+.2f} ({cp:+.2f}%)", delta_color="normal" if ch >= 0 else "inverse")
         p2.metric("Previous Close", f"{'₹' if '.NS' in ticker else '$'}{pc:,.2f}" if pc else "—")
         p3.metric("Market Cap",
-                  f"{'₹' if '.NS' in ticker else '$'}{mc/1e12:.2f}T" if mc and mc>=1e12
-                  else f"{'₹' if '.NS' in ticker else '$'}{mc/1e9:.1f}B" if mc and mc>=1e9
+                  f"{'₹' if '.NS' in ticker else '$'}{mc/1e12:.2f}T" if mc and mc >= 1e12
+                  else f"{'₹' if '.NS' in ticker else '$'}{mc/1e9:.1f}B" if mc and mc >= 1e9
                   else "—")
-        p4.metric("Avg Volume (3M)", f"{vol/1e6:.1f}M" if vol and vol>=1e6 else f"{vol:,.0f}" if vol else "—")
+        p4.metric("Avg Volume (3M)", f"{vol/1e6:.1f}M" if vol and vol >= 1e6 else f"{vol:,.0f}" if vol else "—")
 
         hist = fetch_price_history(ticker, period="5d", interval="1h")
         if hist is not None and not hist.empty:
             fig_p = go.Figure(go.Candlestick(
                 x=hist.index, open=hist["Open"], high=hist["High"], low=hist["Low"], close=hist["Close"],
-                increasing=dict(line=dict(color="#22c55e",width=1.5), fillcolor="rgba(34,197,94,0.25)"),
-                decreasing=dict(line=dict(color="#ef4444",width=1.5), fillcolor="rgba(239,68,68,0.25)"),
+                increasing=dict(line=dict(color="#2ECC71", width=1.5), fillcolor="rgba(46,204,113,0.2)"),
+                decreasing=dict(line=dict(color="#E74C3C", width=1.5), fillcolor="rgba(231,76,60,0.2)"),
                 name="Price",
             ))
             apply_chart_theme(fig_p, f"{name} — 5-Day Price (1h candles)", height=300)
             fig_p.update_layout(
                 xaxis_rangeslider_visible=False,
                 xaxis=dict(
-                    tickfont=dict(family="Fira Code",size=10),
+                    tickfont=dict(family="DM Mono", size=10),
                     rangebreaks=[
-                        dict(bounds=["sat", "mon"]), # Hide weekends
-                        dict(bounds=[16.5, 9.25], pattern="hour") # Hide overnight gaps (approx for India/US)
+                        dict(bounds=["sat", "mon"]),
+                        dict(bounds=[16.5, 9.25], pattern="hour")
                     ]
                 ),
-                yaxis=dict(tickprefix="₹" if ".NS" in ticker else "$", tickfont=dict(family="Fira Code",size=10))
+                yaxis=dict(tickprefix="₹" if ".NS" in ticker else "$", tickfont=dict(family="DM Mono", size=10))
             )
-            st.plotly_chart(fig_p, use_container_width=True, config={"displayModeBar":False})
+            st.plotly_chart(fig_p, use_container_width=True, config={"displayModeBar": False})
     else:
         st.caption(f"Live price unavailable for {ticker}.")
 
     # ── Sentiment charts
     st.divider()
-    st.markdown('<div class="section-label">Sentiment Analysis</div>', unsafe_allow_html=True)
+    st.markdown('<div class="fp-eyebrow">Sentiment Analysis</div>', unsafe_allow_html=True)
 
     left, right = st.columns(2)
 
-    # Build hover text with contributing articles
     hover_texts = []
     contributing_list = df["contributing_articles"].tolist() if "contributing_articles" in df.columns else []
     for i, articles in enumerate(contributing_list):
@@ -807,15 +1194,11 @@ def render_ticker_analysis():
                 label_icon = "+" if art.get("label") == "positive" else ("-" if art.get("label") == "negative" else "~")
                 headline = art.get('headline', '')
                 url = art.get('url', '')
-                
-                # Ensure the headline doesn't stretch the tooltip too wide
                 short_head = headline[:55] + "..." if len(headline) > 55 else headline
-                
                 if url:
-                    lines.append(f"{label_icon} [{art.get('source','?').upper()}] <a href='{url}' target='_blank' style='color:#6ee7b7'>{short_head}</a>")
+                    lines.append(f"{label_icon} [{art.get('source','?').upper()}] <a href='{url}' target='_blank' style='color:#F5A623'>{short_head}</a>")
                 else:
                     lines.append(f"{label_icon} [{art.get('source','?').upper()}] {short_head}")
-                
                 lines.append(f"  Score: {art.get('score',0):+.4f} | Weight: {art.get('weight',1.0):.2f}")
             hover_texts.append("<br>".join(lines))
         else:
@@ -827,39 +1210,35 @@ def render_ticker_analysis():
         fig.add_trace(go.Scatter(
             x=df["timestamp_ist"], y=df["avg_sentiment"],
             mode="lines+markers",
-            line=dict(color="#06b6d4", width=2.5),
-            marker=dict(color=sc, size=8, line=dict(color="#09090b",width=1.5)),
-            fill="tozeroy", fillcolor="rgba(6,182,212,0.08)",
+            line=dict(color="#F5A623", width=2),
+            marker=dict(color=sc, size=7, line=dict(color="#080A0F", width=1.5)),
+            fill="tozeroy", fillcolor="rgba(245,166,35,0.06)",
             text=hover_texts,
             hovertemplate="%{text}<extra></extra>",
         ))
-        fig.add_hline(y=BUY_THRESHOLD, line=dict(color="rgba(16,185,129,0.3)",width=1,dash="dot"))
-        fig.add_hline(y=SELL_THRESHOLD, line=dict(color="rgba(244,63,94,0.3)",width=1,dash="dot"))
-        fig.add_hline(y=0, line=dict(color="rgba(255,255,255,0.06)",width=1,dash="dot"))
+        fig.add_hline(y=BUY_THRESHOLD, line=dict(color="rgba(46,204,113,0.25)", width=1, dash="dot"))
+        fig.add_hline(y=SELL_THRESHOLD, line=dict(color="rgba(231,76,60,0.25)", width=1, dash="dot"))
+        fig.add_hline(y=0, line=dict(color="rgba(255,255,255,0.05)", width=1, dash="dot"))
         apply_chart_theme(fig, f"{name} — Sentiment Trend (IST)")
         fig.update_layout(xaxis=dict(tickformat="%d %b %H:%M"))
-        
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar":False})
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
     with right:
         fig2 = go.Figure(go.Pie(
-            labels=["Positive","Negative","Neutral"], values=[pos,neg,neu], hole=0.62,
-            marker=dict(colors=["#10b981","#ef4444","#475569"],line=dict(color="#09090b",width=3)),
-            textinfo="label+percent", textfont=dict(size=11,family="Outfit"),
+            labels=["Positive", "Negative", "Neutral"], values=[pos, neg, neu], hole=0.65,
+            marker=dict(colors=["#2ECC71", "#E74C3C", "#2C3440"], line=dict(color="#080A0F", width=3)),
+            textinfo="label+percent", textfont=dict(size=11, family="Inter"),
             hovertemplate="<b>%{label}</b><br>Count: %{value}<br>Share: %{percent}<extra></extra>",
         ))
         fig2.update_layout(**CHART_THEME,
-            title=dict(text=f"{name} — Sentiment Distribution",font=dict(size=13,color="#a1a1aa"),x=0),
+            title=dict(text=f"{name} — Sentiment Distribution", font=dict(size=12, color="#5C6370"), x=0),
             height=380, showlegend=False,
-            annotations=[dict(text=f"<b>{avg:+.2f}</b>",x=0.5,y=0.5,showarrow=False,
-                font=dict(size=22,color=sentiment_color(avg),family="Fira Code"))])
-        st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar":False})
+            annotations=[dict(text=f"<b>{avg:+.2f}</b>", x=0.5, y=0.5, showarrow=False,
+                font=dict(size=20, color=sentiment_color(avg), family="DM Mono"))])
+        st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
 
-    # ── Legend
     render_legend()
 
-    # ── Insight card
-    # Detect trend
     if len(df) >= 2:
         recent = df["avg_sentiment"].iloc[-3:].mean()
         earlier = df["avg_sentiment"].iloc[:3].mean()
@@ -874,53 +1253,61 @@ def render_ticker_analysis():
         rec_label=str(rec_label) if rec_label else None,
     )
 
-    # ── 6-Month Trend Graph
-    st.markdown('<div class="section-label" style="margin-top:2rem;">6-Month Price Trend</div>', unsafe_allow_html=True)
+    # ── 6-Month Trend
+    st.markdown('<div class="fp-eyebrow" style="margin-top:2rem">6-Month Price Trend</div>', unsafe_allow_html=True)
     hist_6m = fetch_price_history(ticker, period="6mo", interval="1d")
     if hist_6m is not None and not hist_6m.empty:
         fig_trend = go.Figure()
         fig_trend.add_trace(go.Scatter(
             x=hist_6m.index, y=hist_6m["Close"],
             mode="lines",
-            line=dict(color="#a855f7", width=2.5),
-            fill="tozeroy", fillcolor="rgba(168,85,247,0.08)",
+            line=dict(color="#F5A623", width=2),
+            fill="tozeroy", fillcolor="rgba(245,166,35,0.06)",
             name="Daily Close",
             hovertemplate="<b>%{x|%d %b %Y}</b><br>Close: %{y:.2f}<extra></extra>"
         ))
-        
-        # Add 50-day moving average
         if len(hist_6m) >= 50:
             sma_50 = hist_6m["Close"].rolling(window=50).mean()
             fig_trend.add_trace(go.Scatter(
                 x=hist_6m.index, y=sma_50,
                 mode="lines",
-                line=dict(color="#f97316", width=1.5, dash="dot"),
+                line=dict(color="#3498DB", width=1.5, dash="dot"),
                 name="50d SMA",
                 hovertemplate="<b>%{x|%d %b %Y}</b><br>50d SMA: %{y:.2f}<extra></extra>"
             ))
-            
         apply_chart_theme(fig_trend, f"{name} — 6-Month Price Trend", height=350)
         fig_trend.update_layout(
             xaxis=dict(tickformat="%b %Y"),
-            yaxis=dict(tickprefix="₹" if ".NS" in ticker else "$", tickfont=dict(family="Fira Code",size=10))
+            yaxis=dict(tickprefix="₹" if ".NS" in ticker else "$", tickfont=dict(family="DM Mono", size=10))
         )
-        st.plotly_chart(fig_trend, use_container_width=True, config={"displayModeBar":False})
+        st.plotly_chart(fig_trend, use_container_width=True, config={"displayModeBar": False})
+
+        if t_score is not None:
+            trend_sugg = "BUY" if t_score > 0.2 else "SELL" if t_score < -0.2 else "HOLD / MONITOR"
+            trend_color = "#2ECC71" if trend_sugg == "BUY" else "#E74C3C" if trend_sugg == "SELL" else "#F39C12"
+            st.markdown(f"""
+            <div class="fp-trend-box">
+                <div class="fp-trend-box-label">Trend Analysis Suggestion</div>
+                <div style='color:{trend_color}; font-weight:700; font-size:1rem; font-family:"DM Mono",monospace'>{trend_sugg}</div>
+                <div class="fp-trend-box-note">Based on historical 6-month price action and momentum only.</div>
+            </div>
+            """, unsafe_allow_html=True)
     else:
         st.caption(f"Historical price trend unavailable for {ticker}.")
 
     # ── Correlation
     st.divider()
-    st.markdown('<div class="section-label">Price — Sentiment Correlation</div>', unsafe_allow_html=True)
+    st.markdown('<div class="fp-eyebrow">Price — Sentiment Correlation</div>', unsafe_allow_html=True)
     corr_data = fetch_correlation(ticker, days)
     if corr_data:
         cv   = corr_data.get("correlation", 0.0)
         dp   = corr_data.get("data_points", 0)
         interp = corr_data.get("interpretation", "—")
-        cc1,cc2,cc3 = st.columns(3)
+        cc1, cc2, cc3 = st.columns(3)
         cc1.metric("Pearson Correlation", f"{cv:+.4f}")
         cc2.metric("Data Points", dp)
         with cc3:
-            if cv > 0.3:   st.success(interp)
+            if cv > 0.3:    st.success(interp)
             elif cv < -0.3: st.error(interp)
             else:            st.warning(interp)
     else:
@@ -930,7 +1317,7 @@ def render_ticker_analysis():
 # Tab 3 — Signals
 # ─────────────────────────────────────────────
 def render_signals():
-    st.markdown('<div class="section-label">Trading Signals — Sentiment-Driven</div>', unsafe_allow_html=True)
+    st.markdown('<div class="fp-eyebrow">Trading Signals — Sentiment-Driven</div>', unsafe_allow_html=True)
     render_legend()
 
     data = fetch_signals()
@@ -941,11 +1328,11 @@ def render_signals():
     signals = data["signals"]
     df = pd.DataFrame(signals)
 
-    buy  = len(df[df["signal"]=="BUY"])
-    sell = len(df[df["signal"]=="SELL"])
-    hold = len(df[df["signal"]=="HOLD"])
+    buy  = len(df[df["signal"] == "BUY"])
+    sell = len(df[df["signal"] == "SELL"])
+    hold = len(df[df["signal"] == "HOLD"])
 
-    k1,k2,k3,k4 = st.columns(4)
+    k1, k2, k3, k4 = st.columns(4)
     k1.metric("Buy Signals",  buy)
     k2.metric("Sell Signals", sell)
     k3.metric("Hold Signals", hold)
@@ -956,150 +1343,144 @@ def render_signals():
     col_a, col_b = st.columns(2)
     with col_a:
         fig = go.Figure(go.Bar(
-            x=["BUY","SELL","HOLD"], y=[buy,sell,hold],
-            marker=dict(color=["#22c55e","#ef4444","#fbbf24"],line=dict(color="#070c18",width=0)),
-            text=[buy,sell,hold], textposition="outside",
-            textfont=dict(family="JetBrains Mono",size=12,color="#94a3b8"),
+            x=["BUY", "SELL", "HOLD"], y=[buy, sell, hold],
+            marker=dict(color=["#2ECC71", "#E74C3C", "#F39C12"], line=dict(color="#080A0F", width=0)),
+            text=[buy, sell, hold], textposition="outside",
+            textfont=dict(family="DM Mono", size=12, color="#5C6370"),
         ))
         apply_chart_theme(fig, "Signal Distribution", height=320)
-        fig.update_layout(bargap=0.5,showlegend=False)
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar":False})
+        fig.update_layout(bargap=0.5, showlegend=False)
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
     with col_b:
-        fig2 = go.Figure(go.Histogram(
-            x=[s.get("confidence",0) for s in signals], nbinsx=10,
-            marker=dict(color="#3b82f6",line=dict(color="#070c18",width=1.5)),opacity=0.85,
+        display_names = [s.get("name") for s in signals]
+        sentiments = [s.get("sentiment", 0) for s in signals]
+        fig2 = go.Figure(go.Bar(
+            y=display_names,
+            x=sentiments,
+            orientation="h",
+            marker=dict(
+                color=["#2ECC71" if v > 0 else "#E74C3C" if v < 0 else "#F39C12" for v in sentiments],
+                line=dict(color="#080A0F", width=1)
+            ),
+            opacity=0.85,
         ))
-        apply_chart_theme(fig2, "Confidence Score Distribution", height=320)
-        fig2.update_layout(xaxis_title="Confidence (%)",yaxis_title="Count",bargap=0.1)
-        st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar":False})
+        apply_chart_theme(fig2, "Sentiment by Ticker", height=320)
+        fig2.update_layout(xaxis_title="Sentiment Score", yaxis_title="", yaxis=dict(autorange="reversed"))
+        st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
 
     st.divider()
-    st.markdown('<div class="section-label">Active Signals Table</div>', unsafe_allow_html=True)
-    display_cols = [c for c in ["ticker","name","sector","signal","confidence_level","confidence","sentiment","trend_score","recommendation_score","news_count"] if c in df.columns]
+    st.markdown('<div class="fp-eyebrow">Active Signals Table</div>', unsafe_allow_html=True)
+    display_cols = [c for c in ["ticker","name","sector","signal","confidence","sentiment","news_count"] if c in df.columns]
     display_df = df[display_cols].copy().sort_values("confidence", ascending=False)
     if "confidence" in display_df.columns:
         display_df["confidence"] = display_df["confidence"].apply(lambda x: f"{x:.1f}%")
     if "sentiment" in display_df.columns:
         display_df["sentiment"] = display_df["sentiment"].apply(lambda x: f"{x:+.4f}")
-    if "trend_score" in display_df.columns:
-        display_df["trend_score"] = display_df["trend_score"].apply(lambda x: f"{x:+.3f}" if x is not None else "—")
-    if "recommendation_score" in display_df.columns:
-        display_df["recommendation_score"] = display_df["recommendation_score"].apply(lambda x: f"{x:+.3f}" if x is not None else "—")
     display_df.columns = [c.replace("_", " ").title() for c in display_df.columns]
     st.dataframe(display_df, use_container_width=True, hide_index=True)
     st.caption("Signals are generated for educational analysis only. Not financial advice.")
 
 # ─────────────────────────────────────────────
-# Tab 4 — Radar & Correlation
+# Tab 4 — Radar & Correlation (inside Overview tab)
 # ─────────────────────────────────────────────
 def render_radar():
-    st.markdown('<div class="section-label">Sentiment Anomaly Radar</div>', unsafe_allow_html=True)
-    st.caption("Detects massive sudden spikes in news volume or extreme 24h sentiment shifts.")
-    
+    st.markdown('<div class="fp-eyebrow">Sentiment Anomaly Radar</div>', unsafe_allow_html=True)
+    st.caption("Detects sudden spikes in news volume or extreme 24h sentiment shifts.")
+
     options = get_ticker_options()
     all_tickers = [o[1] for o in options]
-    
+
     anomalies = []
     correlations = []
-    
+
     with st.spinner("Scanning market for anomalies..."):
         for ticker in all_tickers:
-            # 1. Anomaly Detection
             sentiment_data = fetch_sentiment(ticker, days=7)
             if sentiment_data and sentiment_data.get("data"):
                 df = pd.DataFrame(sentiment_data["data"])
                 df["date"] = pd.to_datetime(df["timestamp"], format="ISO8601").dt.date
                 daily = df.groupby("date").agg({"news_count": "sum", "avg_sentiment": "mean"}).reset_index()
-                
+
                 if len(daily) >= 2:
                     today = daily.iloc[-1]
                     history = daily.iloc[:-1]
-                    
                     avg_vol = history["news_count"].mean()
                     avg_sent = history["avg_sentiment"].mean()
-                    
-                    # Detect volume spike
+
                     if avg_vol > 0 and today["news_count"] > avg_vol * 2.0 and today["news_count"] >= 5:
                         anomalies.append({
-                            "ticker": ticker, "type": "Volume Spike", 
+                            "ticker": ticker, "type": "Volume Spike",
                             "details": f"News volume jumped to {int(today['news_count'])} articles today (7d avg: {avg_vol:.1f})",
                             "severity": "high"
                         })
-                    
-                    # Detect sentiment swing
+
                     if abs(today["avg_sentiment"] - avg_sent) > 0.4:
                         swing_dir = "Drop" if today["avg_sentiment"] < avg_sent else "Surge"
                         anomalies.append({
-                            "ticker": ticker, "type": f"Sentiment {swing_dir}", 
-                            "details": f"Sentiment shifted drastically from {avg_sent:+.2f} (7d avg) to {today['avg_sentiment']:+.2f} today",
+                            "ticker": ticker, "type": f"Sentiment {swing_dir}",
+                            "details": f"Sentiment shifted from {avg_sent:+.2f} (7d avg) to {today['avg_sentiment']:+.2f} today",
                             "severity": "critical" if swing_dir == "Drop" else "medium"
                         })
-            
-            # 2. Correlation
+
             corr_data = fetch_correlation(ticker, days=7)
             if corr_data and "correlation" in corr_data:
-                correlations.append({
-                    "ticker": ticker, 
-                    "correlation": corr_data["correlation"]
-                })
-                
+                correlations.append({"ticker": ticker, "correlation": corr_data["correlation"]})
+
     if not anomalies:
-        st.success("✅ Market is stable. No massive sentiment swings or unusual news volumes detected today.")
+        st.success("✅ Market stable — no major sentiment swings or volume spikes detected today.")
     else:
         for anom in anomalies:
-            color = "#ef4444" if anom["severity"] == "critical" else ("#f59e0b" if anom["severity"] == "high" else "#10b981")
+            color = "#E74C3C" if anom["severity"] == "critical" else ("#F39C12" if anom["severity"] == "high" else "#2ECC71")
             st.markdown(f"""
-            <div style='background:rgba(9,9,11,0.6);border-left:4px solid {color};padding:1rem;margin-bottom:1rem;border-radius:4px;'>
-                <div style='font-weight:700;font-size:1.1rem;color:#f8fafc;margin-bottom:0.25rem;'>
-                    {anom['ticker']} &mdash; {anom['type']}
-                </div>
-                <div style='color:#94a3b8;font-size:0.9rem;'>
-                    {anom['details']}
-                </div>
+            <div class="fp-anomaly" style="border-left:3px solid {color}">
+                <div class="fp-anomaly-title" style="color:{color}">{anom['ticker']} — {anom['type']}</div>
+                <div class="fp-anomaly-detail">{anom['details']}</div>
             </div>
             """, unsafe_allow_html=True)
-            
+
     st.divider()
-    st.markdown('<div class="section-label">Price vs. Sentiment Correlation (7-Day)</div>', unsafe_allow_html=True)
-    st.caption("Measures how closely a stock's price movements follow its news sentiment. (+1.0 = Perfect Follower, -1.0 = Inverse).")
-    
-    if correlations:
-        corr_df = pd.DataFrame(correlations).sort_values("correlation", ascending=True)
-        colors = ["#10b981" if c > 0 else "#ef4444" for c in corr_df["correlation"]]
-        
-        fig = go.Figure(go.Bar(
-            y=corr_df["ticker"], x=corr_df["correlation"],
-            orientation="h",
-            marker=dict(color=colors, line=dict(color="rgba(0,0,0,0)",width=0)),
-            text=[f"{c:+.2f}" for c in corr_df["correlation"]],
-            textposition="auto",
-            textfont=dict(family="Fira Code",size=11,color="#f8fafc")
-        ))
-        apply_chart_theme(fig, "", height=380)
-        fig.add_vline(x=0, line=dict(color="rgba(255,255,255,0.1)",width=1,dash="dot"))
-        fig.update_layout(xaxis_range=[-1.0, 1.0], xaxis_title="Correlation Coefficient (r)", margin=dict(t=10, b=10))
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar":False})
+    st.markdown('<div class="fp-eyebrow">Top 2 Gainers — Indian Market</div>', unsafe_allow_html=True)
+    st.caption("Top performing major Indian stocks over the last trading session.")
+
+    gainers = fetch_top_indian_gainers()
+    if gainers and len(gainers) >= 2:
+        g1, g2 = gainers[0], gainers[1]
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown(f"""
+            <div class="fp-gainer">
+                <div class="fp-gainer-ticker">{g1['ticker']}</div>
+                <div class="fp-gainer-change">+{g1['change']}%</div>
+            </div>
+            """, unsafe_allow_html=True)
+        with c2:
+            st.markdown(f"""
+            <div class="fp-gainer">
+                <div class="fp-gainer-ticker">{g2['ticker']}</div>
+                <div class="fp-gainer-change">+{g2['change']}%</div>
+            </div>
+            """, unsafe_allow_html=True)
     else:
-        st.info("Not enough data to calculate correlations yet. The backend aggregation pipeline needs at least 2 data points.")
+        st.info("Market data currently unavailable for top gainers.")
 
 # ─────────────────────────────────────────────
 # Tab 5 — News Feed
 # ─────────────────────────────────────────────
 def render_news_feed():
-    st.markdown('<div class="section-label">Latest Financial News</div>', unsafe_allow_html=True)
+    st.markdown('<div class="fp-eyebrow">Latest Financial News</div>', unsafe_allow_html=True)
 
     options = get_ticker_options()
     labels  = ["All Tickers"] + [o[0] for o in options]
     tickers = [None] + [o[1] for o in options]
 
-    c1,c2,c3 = st.columns([3,1,1])
+    c1, c2, c3 = st.columns([3, 1, 1])
     with c1:
         selected = st.selectbox("Filter by Stock", labels, index=0)
     with c2:
-        news_limit = st.slider("Articles", 10,100,30,step=10)
+        news_limit = st.slider("Articles", 10, 100, 30, step=10)
     with c3:
-        days_filter = st.slider("Days back", 1,30,7)
+        days_filter = st.slider("Days back", 1, 90, 7)
 
     ticker_filter = tickers[labels.index(selected)]
     news_data = fetch_news(ticker=ticker_filter, limit=news_limit, days=days_filter)
@@ -1109,39 +1490,42 @@ def render_news_feed():
         return
 
     articles = news_data["data"]
-    st.caption(f"Showing {len(articles)} of {news_data.get('total',0)} articles")
+    st.caption(f"Showing {len(articles)} of {news_data.get('total', 0)} articles")
     st.divider()
 
     for art in articles:
-        label  = art.get("sentiment_label","neutral")
-        score  = art.get("sentiment_score",0.0) or 0.0
-        source = art.get("source","Unknown")
-        weight = art.get("source_weight",0.85)
+        label  = art.get("sentiment_label", "neutral")
+        score  = art.get("sentiment_score", 0.0) or 0.0
+        source = art.get("source", "Unknown")
+        weight = art.get("source_weight", 0.85)
         ticker = art.get("ticker") or "—"
-        ts     = fmt_ist(art.get("timestamp",""))
-        url    = art.get("url","")
+        ts     = fmt_ist(art.get("timestamp", ""))
+        url    = art.get("url", "")
 
         if label == "positive":
-            score_class, score_prefix = "news-score-pos","+"
+            score_class, score_prefix = "fp-score-pos", "+"
         elif label == "negative":
-            score_class, score_prefix = "news-score-neg",""
+            score_class, score_prefix = "fp-score-neg", ""
         else:
-            score_class, score_prefix = "news-score-neu",""
+            score_class, score_prefix = "fp-score-neu", ""
 
-        headline_html = f'<a href="{url}" target="_blank" style="color:#e2e8f0;text-decoration:none">{art.get("headline","")}</a>' if url else art.get("headline","")
+        headline_html = (
+            f'<a href="{url}" target="_blank">{art.get("headline","")}</a>'
+            if url else art.get("headline", "")
+        )
 
         st.markdown(f"""
-        <div class="news-card">
-            <div class="news-headline">{headline_html}</div>
-            <div class="news-meta">
-                <span class="source-badge">{source.upper()} {weight:.2f}</span>
-                &nbsp;&bull;&nbsp;
-                <span style="color:#1d4ed8;font-weight:500">{ticker}</span>
-                &nbsp;&bull;&nbsp;
-                <span class="{score_class}">{label.upper()} &nbsp;{score_prefix}{score:.4f}</span>
-                &nbsp;&bull;&nbsp;
-                <span style="color:#334155">{ts}</span>
-                {"&nbsp;&bull;&nbsp;<a href='" + url + "' target='_blank' style='color:#3b82f6;font-size:0.72rem'>View Article</a>" if url else ""}
+        <div class="fp-news">
+            <div class="fp-news-headline">{headline_html}</div>
+            <div class="fp-news-meta">
+                <span class="fp-tag">{source.upper()} {weight:.2f}</span>
+                <span style="color:#3C4558">·</span>
+                <span style="color:#3498DB;font-weight:600;font-family:'DM Mono',monospace">{ticker}</span>
+                <span style="color:#3C4558">·</span>
+                <span class="{score_class}">{label.upper()} {score_prefix}{score:.4f}</span>
+                <span style="color:#3C4558">·</span>
+                <span style="color:#3C4558">{ts}</span>
+                {"<span style='color:#3C4558'>·</span><a href='" + url + "' target='_blank' style='color:#F5A623;font-size:0.7rem'>View →</a>" if url else ""}
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -1153,17 +1537,17 @@ def main():
     render_sidebar()
 
     st.markdown("""
-    <div class="hero-container">
-        <div class="hero-badge">Next-Gen Analytics</div>
-        <div class="hero-title">FinPulse Intelligence</div>
-        <div class="hero-subtitle">
-            Real-Time Financial News Sentiment &nbsp;&middot;&nbsp; Powered by FinBERT AI &nbsp;&middot;&nbsp; Hybrid RSS + NewsAPI Streaming
+    <div class="fp-hero">
+        <div class="fp-hero-tag">⚡ Real-Time Intelligence Platform</div>
+        <div class="fp-hero-title">Fin<span>Pulse</span></div>
+        <div class="fp-hero-desc">
+            Financial news sentiment analysis powered by FinBERT.
         </div>
     </div>
     """, unsafe_allow_html=True)
 
     tabs = st.tabs(["Overview", "Ticker Analysis", "Signals", "News Feed"])
-    with tabs[0]: 
+    with tabs[0]:
         render_overview()
         st.write("---")
         render_radar()
@@ -1172,28 +1556,28 @@ def main():
     with tabs[3]: render_news_feed()
 
     st.divider()
-    c1,c2,c3 = st.columns(3)
+    c1, c2, c3 = st.columns(3)
     with c1:
-        st.markdown("""<div style="font-size:0.78rem;color:#334155;line-height:2">
-        <b style="color:#475569">Universe</b><br>
-        10 stocks across 5 sectors<br>
-        8 Indian (NSE) + 2 Global<br>
-        Real-time via RSS + NewsAPI
-        </div>""", unsafe_allow_html=True)
+        st.markdown("""
+        <div class="fp-footer-block">
+            <div class="fp-footer-title">Universe</div>
+            <div class="fp-footer-text">10 stocks across 5 sectors<br>8 Indian (NSE) + 2 Global<br>Real-time via RSS + NewsAPI</div>
+        </div>
+        """, unsafe_allow_html=True)
     with c2:
-        st.markdown("""<div style="font-size:0.78rem;color:#334155;line-height:2">
-        <b style="color:#475569">Pipeline</b><br>
-        Hybrid RSS + NewsAPI fetch<br>
-        FinBERT sentiment scoring<br>
-        Source-weighted aggregation
-        </div>""", unsafe_allow_html=True)
+        st.markdown("""
+        <div class="fp-footer-block">
+            <div class="fp-footer-title">Pipeline</div>
+            <div class="fp-footer-text">Hybrid RSS + NewsAPI fetch<br>FinBERT sentiment scoring<br>Source-weighted aggregation</div>
+        </div>
+        """, unsafe_allow_html=True)
     with c3:
-        st.markdown("""<div style="font-size:0.78rem;color:#334155;line-height:2">
-        <b style="color:#475569">Disclaimer</b><br>
-        Educational analytics tool only.<br>
-        Not investment advice.<br>
-        Always consult a financial advisor.
-        </div>""", unsafe_allow_html=True)
+        st.markdown("""
+        <div class="fp-footer-block">
+            <div class="fp-footer-title">Disclaimer</div>
+            <div class="fp-footer-text">Educational analytics tool only.<br>Not investment advice.<br>Always consult a financial advisor.</div>
+        </div>
+        """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
