@@ -461,10 +461,10 @@ hr {
   border-radius: 14px;
   padding: 1.2rem 1.5rem;
   margin: 1rem 0;
-  max-width: 50%;
+  max-width: 100%;
 }
 .fp-legend-title {
-  font-size: 0.6rem;
+  font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -476,7 +476,7 @@ hr {
   align-items: center;
   gap: 1rem;
   margin-bottom: 0.6rem;
-  font-size: 0.82rem;
+  font-size: 0.9rem;
   color: var(--text-secondary);
 }
 .fp-badge {
@@ -722,13 +722,16 @@ def get_universe():
         "Global Tech":           [{"ticker":"MSFT","name":"Microsoft"},{"ticker":"NVDA","name":"NVIDIA"}],
     }}
 
+SECTOR_COLORS = {
+    "Banking (India)": "🟢",
+    "Retail (India)": "🔵",
+    "Manufacturing (India)": "🟠",
+    "Automobile (India)": "🟣",
+    "Global Tech": "⚪"
+}
+
 def get_ticker_options():
-    u = get_universe()
-    options = []
-    for sector, stocks in u.get("universe", {}).items():
-        for s in stocks:
-            options.append((f"{s['name']}  [{s['ticker']}]  —  {sector}", s["ticker"]))
-    return options
+    return get_universe().get("universe", {})
 
 # ─────────────────────────────────────────────
 # Data fetchers (unchanged)
@@ -841,48 +844,53 @@ def apply_chart_theme(fig, title="", height=380):
         height=height)
     return fig
 
-def render_legend(ticker=None):
-    col1, col2 = st.columns([2.5, 1], gap="large")
-    with col1:
-        st.markdown("""
-        <div class="fp-legend">
-            <div class="fp-legend-title">Signal Reference — Sentiment Score Thresholds</div>
-            <div class="fp-legend-row">
-                <span class="fp-badge fp-badge-buy">BUY</span>
-                <span>Score &gt; +0.30 &nbsp;·&nbsp; Strong positive news sentiment — review for upside potential</span>
-            </div>
-            <div class="fp-legend-row">
-                <span class="fp-badge fp-badge-hold">HOLD</span>
-                <span>Score −0.15 to +0.30 &nbsp;·&nbsp; Mixed or neutral — wait for clearer signals</span>
-            </div>
-            <div class="fp-legend-row">
-                <span class="fp-badge fp-badge-sell">SELL</span>
-                <span>Score &lt; −0.15 &nbsp;·&nbsp; Predominantly negative news — exercise caution</span>
-            </div>
-            <div style="font-size:0.65rem;color:#2a3140;margin-top:0.7rem;font-family:'DM Mono',monospace">
-                SOURCE WEIGHTS &nbsp;·&nbsp; Reuters 1.00 &nbsp;·&nbsp; CNBC 0.95 &nbsp;·&nbsp; Yahoo Finance 0.90 &nbsp;·&nbsp; NewsAPI 0.85
-            </div>
+def render_legend(ticker=None, show_headlines=False):
+    legend_html = """
+    <div class="fp-legend">
+        <div class="fp-legend-title">Signal Reference — Sentiment Score Thresholds</div>
+        <div class="fp-legend-row">
+            <span class="fp-badge fp-badge-buy">BUY</span>
+            <span>Score &gt; +0.30 &nbsp;·&nbsp; Strong positive news sentiment — review for upside potential</span>
         </div>
-        """, unsafe_allow_html=True)
-        
-    with col2:
-        news_resp = fetch_news(ticker=ticker, limit=3)
-        news = news_resp.get("data", []) if news_resp else []
-        if news:
-            st.markdown('<div style="font-size: 0.65rem; color: #5B578A; letter-spacing: 0.05em; font-weight: 600; font-family: \'Inter\', sans-serif; margin-bottom: 0.5rem; text-transform: uppercase;">Today"s Top Recent Headlines</div>', unsafe_allow_html=True)
-            for h in news:
-                label_color = "#2ECC71" if h.get("sentiment_label") == "positive" else ("#E74C3C" if h.get("sentiment_label") == "negative" else "#5B578A")
-                timestamp = fmt_ist(h.get('timestamp')) if 'timestamp' in h else ''
-                st.markdown(f"""
-                <div style="background: rgba(255,255,255,0.03); padding: 0.6rem 0.8rem; border-radius: 4px; margin-bottom: 0.4rem; border-left: 2px solid {label_color};">
-                    <div style="font-size: 0.85rem; color: #F1F0FF; margin-bottom: 0.2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                        <a href="{h.get('url', '#')}" target="_blank" style="color: inherit; text-decoration: none;">{h.get('headline')}</a>
+        <div class="fp-legend-row">
+            <span class="fp-badge fp-badge-hold">HOLD</span>
+            <span>Score −0.15 to +0.30 &nbsp;·&nbsp; Mixed or neutral — wait for clearer signals</span>
+        </div>
+        <div class="fp-legend-row">
+            <span class="fp-badge fp-badge-sell">SELL</span>
+            <span>Score &lt; −0.15 &nbsp;·&nbsp; Predominantly negative news — exercise caution</span>
+        </div>
+        <div style="font-size:0.7rem;color:#7A8499;margin-top:0.7rem;font-family:'DM Mono',monospace">
+            SOURCE WEIGHTS &nbsp;·&nbsp; Reuters 1.00 &nbsp;·&nbsp; CNBC 0.95 &nbsp;·&nbsp; Yahoo Finance 0.90 &nbsp;·&nbsp; NewsAPI 0.85
+        </div>
+    </div>
+    """
+
+    if show_headlines:
+        col1, col2 = st.columns([2.5, 1], gap="large")
+        with col1:
+            st.markdown(legend_html, unsafe_allow_html=True)
+            
+        with col2:
+            news_resp = fetch_news(ticker=ticker, limit=3)
+            news = news_resp.get("data", []) if news_resp else []
+            if news:
+                st.markdown('<div style="font-size: 0.65rem; color: #5B578A; letter-spacing: 0.05em; font-weight: 600; font-family: \'Inter\', sans-serif; margin-bottom: 0.5rem; text-transform: uppercase;">Today\'s Top Recent Headlines</div>', unsafe_allow_html=True)
+                for h in news:
+                    label_color = "#2ECC71" if h.get("sentiment_label") == "positive" else ("#E74C3C" if h.get("sentiment_label") == "negative" else "#5B578A")
+                    timestamp = fmt_ist(h.get('timestamp')) if 'timestamp' in h else ''
+                    st.markdown(f"""
+                    <div style="background: rgba(255,255,255,0.03); padding: 0.6rem 0.8rem; border-radius: 4px; margin-bottom: 0.4rem; border-left: 2px solid {label_color};">
+                        <div style="font-size: 0.85rem; color: #F1F0FF; margin-bottom: 0.2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            <a href="{h.get('url', '#')}" target="_blank" style="color: inherit; text-decoration: none;">{h.get('headline')}</a>
+                        </div>
+                        <div style="font-size: 0.65rem; color: #5B578A; font-family: 'DM Mono', monospace;">
+                            {h.get('source', '').upper()} &nbsp;•&nbsp; {timestamp}
+                        </div>
                     </div>
-                    <div style="font-size: 0.65rem; color: #5B578A; font-family: 'DM Mono', monospace;">
-                        {h.get('source', '').upper()} &nbsp;•&nbsp; {timestamp}
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)
+    else:
+        st.markdown(legend_html, unsafe_allow_html=True)
 
 def render_insight_card(ticker: str, name: str, score: float, pos: int, neg: int, neu: int,
                         total: int, days: int, trend: str = "stable",
@@ -1039,7 +1047,7 @@ def render_overview():
             st.dataframe(display, use_container_width=True, hide_index=True, height=360)
 
     st.divider()
-    render_legend()
+    render_legend(show_headlines=True)
 
 
 # ─────────────────────────────────────────────
@@ -1048,17 +1056,20 @@ def render_overview():
 def render_ticker_analysis():
     st.markdown('<div class="fp-eyebrow">Ticker Deep Dive</div>', unsafe_allow_html=True)
 
-    options = get_ticker_options()
-    labels  = [o[0] for o in options]
-    tickers = [o[1] for o in options]
+    sectors_dict = get_ticker_options()
+    sectors = list(sectors_dict.keys())
 
-    c1, c2 = st.columns([3, 1])
+    c1, c2, c3 = st.columns([1.5, 1.5, 1])
     with c1:
-        selected_label = st.selectbox("Select Stock", labels, index=0)
+        selected_sector = st.selectbox("Select Sector", sectors, format_func=lambda x: f"{SECTOR_COLORS.get(x, '⚪')} {x}", key="ta_sector")
     with c2:
+        stocks = sectors_dict[selected_sector]
+        labels = [f"{s['name']} [{s['ticker']}]" for s in stocks]
+        selected_label = st.selectbox("Select Stock", labels, key="ta_stock")
+    with c3:
         days = st.slider("Lookback (days)", 1, 90, 7)
 
-    ticker = tickers[labels.index(selected_label)]
+    ticker = stocks[labels.index(selected_label)]["ticker"]
     name   = selected_label.split("[")[0].strip()
 
     sentiment_data = fetch_sentiment(ticker, days)
@@ -1194,7 +1205,8 @@ def render_ticker_analysis():
             use_container_width=True, 
             config={"displayModeBar": False},
             on_select="rerun",
-            selection_mode="points"
+            selection_mode="points",
+            key="ta_sentiment_chart"
         )
 
     with right:
@@ -1209,7 +1221,10 @@ def render_ticker_analysis():
             height=380, showlegend=False,
             annotations=[dict(text=f"<b>{avg:+.2f}</b>", x=0.5, y=0.5, showarrow=False,
                 font=dict(size=20, color=sentiment_color(avg), family="DM Mono"))])
-        st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False}, key="ta_sentiment_dist")
+        
+        with st.expander("Detailed Signal Reference"):
+            render_legend(show_headlines=False)
 
     # Show clicked news
     selected_points = selection.get("selection", {}).get("points", []) if selection else []
@@ -1230,7 +1245,7 @@ def render_ticker_analysis():
                     </div>
                     """, unsafe_allow_html=True)
 
-    render_legend(ticker=ticker)
+
 
     if len(df) >= 2:
         recent = df["avg_sentiment"].iloc[-3:].mean()
@@ -1383,12 +1398,19 @@ def render_pe_chart():
     
     import yfinance as yf
     
-    options = get_ticker_options()
-    ticker_labels = [o[0] for o in options]
+    sectors_dict = get_ticker_options()
+    sectors = list(sectors_dict.keys())
     
-    selected_label = st.selectbox("Select Ticker", ticker_labels, label_visibility="collapsed")
-    selected_ticker = next(o[1] for o in options if o[0] == selected_label)
-    
+    col1, col2 = st.columns(2)
+    with col1:
+        selected_sector = st.selectbox("Select Sector", sectors, format_func=lambda x: f"{SECTOR_COLORS.get(x, '⚪')} {x}", key="pe_sector")
+    with col2:
+        stocks = sectors_dict[selected_sector]
+        labels = [f"{s['name']} [{s['ticker']}]" for s in stocks]
+        selected_label = st.selectbox("Select Stock", labels, key="pe_stock")
+        
+    selected_ticker = stocks[labels.index(selected_label)]["ticker"]
+        
     with st.spinner(f"Calculating P/E for {selected_ticker}..."):
         try:
             t = yf.Ticker(selected_ticker)
@@ -1450,8 +1472,10 @@ def render_radar():
         st.markdown('<div class="fp-eyebrow">Sentiment Anomaly Radar</div>', unsafe_allow_html=True)
         st.caption("Detects sudden spikes in news volume or extreme 24h sentiment shifts.")
 
-        options = get_ticker_options()
-        all_tickers = [o[1] for o in options]
+        sectors_dict = get_ticker_options()
+        all_tickers = []
+        for stocks in sectors_dict.values():
+            all_tickers.extend([s['ticker'] for s in stocks])
 
         anomalies = []
         correlations = []
@@ -1535,19 +1559,27 @@ def render_radar():
 def render_news_feed():
     st.markdown('<div class="fp-eyebrow">Latest Financial News</div>', unsafe_allow_html=True)
 
-    options = get_ticker_options()
-    labels  = ["All Tickers"] + [o[0] for o in options]
-    tickers = [None] + [o[1] for o in options]
+    sectors_dict = get_ticker_options()
+    sectors = ["All Sectors"] + list(sectors_dict.keys())
 
-    c1, c2, c3 = st.columns([3, 1, 1])
+    c1, c2, c3, c4 = st.columns([1.2, 1.2, 1, 1])
     with c1:
-        selected = st.selectbox("Filter by Stock", labels, index=0)
+        selected_sector = st.selectbox("Filter by Sector", sectors, format_func=lambda x: f"{SECTOR_COLORS.get(x, '⚪')} {x}" if x != "All Sectors" else x)
     with c2:
-        news_limit = st.slider("Articles", 10, 100, 30, step=10)
+        if selected_sector == "All Sectors":
+            selected_stock = st.selectbox("Filter by Stock", ["All Tickers"])
+            ticker_filter = None
+        else:
+            stocks = sectors_dict[selected_sector]
+            labels = [f"{s['name']} [{s['ticker']}]" for s in stocks]
+            selected_stock = st.selectbox("Filter by Stock", labels)
+            ticker_filter = stocks[labels.index(selected_stock)]["ticker"]
+            
     with c3:
+        news_limit = st.slider("Articles", 10, 100, 30, step=10)
+    with c4:
         days_filter = st.slider("Days back", 1, 90, 7)
-
-    ticker_filter = tickers[labels.index(selected)]
+        
     news_data = fetch_news(ticker=ticker_filter, limit=news_limit, days=days_filter)
 
     if not news_data or not news_data.get("data"):
