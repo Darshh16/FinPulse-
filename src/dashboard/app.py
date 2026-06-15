@@ -1162,6 +1162,17 @@ def render_ticker_analysis():
 
     hover_texts = []
     contributing_list = df["contributing_articles"].tolist() if "contributing_articles" in df.columns else []
+    
+    import json
+    for i in range(len(contributing_list)):
+        if isinstance(contributing_list[i], str):
+            try:
+                contributing_list[i] = json.loads(contributing_list[i])
+            except Exception:
+                contributing_list[i] = []
+        elif contributing_list[i] is None:
+            contributing_list[i] = []
+
     for i, articles in enumerate(contributing_list):
         if articles and isinstance(articles, list):
             lines = [f"<b>{fmt_ist(df.iloc[i]['timestamp'])}</b>"]
@@ -1628,39 +1639,6 @@ def render_news_feed():
         """, unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
-# AI Assistant
-# ─────────────────────────────────────────────
-def render_ai_assistant():
-    st.markdown('<div class="fp-eyebrow">FinPulse AI Assistant</div>', unsafe_allow_html=True)
-    st.caption("Domain-restricted natural language interface powered by Qwen3:4b.")
-
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-
-    for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
-
-    if prompt := st.chat_input("Ask about sentiment, anomalies, or recent news..."):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
-
-        with st.chat_message("assistant"):
-            with st.spinner("Analyzing Database..."):
-                try:
-                    res = requests.post(f"{API_URL}/assistant/chat", json={"question": prompt}, timeout=300)
-                    if res.status_code == 200:
-                        reply = res.json().get("response", "No response.")
-                    else:
-                        reply = f"Error: {res.text}"
-                except Exception as e:
-                    reply = f"Connection failed: {e}"
-                
-                st.markdown(reply)
-        st.session_state.messages.append({"role": "assistant", "content": reply})
-
-# ─────────────────────────────────────────────
 # Main
 # ─────────────────────────────────────────────
 def main():
@@ -1674,7 +1652,7 @@ def main():
     </div>
     """, unsafe_allow_html=True)
 
-    tabs = st.tabs(["Overview", "Ticker Analysis", "Signals", "News Feed", "AI Assistant"])
+    tabs = st.tabs(["Overview", "Ticker Analysis", "Signals", "News Feed"])
     with tabs[0]:
         render_overview()
         st.write("---")
@@ -1682,7 +1660,6 @@ def main():
     with tabs[1]: render_ticker_analysis()
     with tabs[2]: render_signals()
     with tabs[3]: render_news_feed()
-    with tabs[4]: render_ai_assistant()
 
     st.divider()
     c1, c2, c3 = st.columns(3)
