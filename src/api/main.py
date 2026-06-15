@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 import logging
 from config.settings import settings
 from src.api.routes import router
+from src.api.ai_assistant import router as ai_router
 from src.database import init_db
 
 # Configure logging
@@ -32,6 +33,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(router)
+app.include_router(ai_router)
 
 
 @app.on_event("startup")

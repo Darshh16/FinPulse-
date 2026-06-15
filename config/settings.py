@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     
     # API Config
     api_host: str = "0.0.0.0"
-    api_port: int = 8000
+    api_port: int = 8001
     
     # Model Config
     model_name: str = "ProsusAI/finbert"

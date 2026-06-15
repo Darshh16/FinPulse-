@@ -40,12 +40,12 @@ PYTHON = sys.executable   # uses the active venv automatically
 SERVICES = [
     {
         "name": "API",
-        "cmd":  [PYTHON, "-m", "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000"],
+        "cmd":  [PYTHON, "-m", "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8001"],
     },
     {
         "name": "DASH",
         "cmd":  [PYTHON, "-m", "streamlit", "run", "src/dashboard/app.py",
-                 "--server.port", "8501", "--server.headless", "true"],
+                 "--server.port", "8502", "--server.headless", "true"],
     },
     {
         "name": "PIPELINE",
@@ -118,16 +118,16 @@ def main():
         os.system("")
 
     print(f"""
-{_BOLD}{_CYAN}╔══════════════════════════════════════════════════════╗
-║          FinPulse — Starting All Services            ║
-╚══════════════════════════════════════════════════════╝{_RESET}
+{_CYAN}======================================================
+          FinPulse — Starting All Services            
+======================================================{_RESET}
 
-  {_GREEN}[API]{_RESET}      http://localhost:8000/docs
-  {_CYAN}[DASH]{_RESET}     http://localhost:8501
+  {_GREEN}[API]{_RESET}      http://localhost:8001/docs
+  {_CYAN}[DASH]{_RESET}     http://localhost:8502
   {_YELLOW}[PIPELINE]{_RESET} Hybrid RSS + NewsAPI (runs every 5 min)
 
-  Press {_BOLD}Ctrl+C{_RESET} to stop everything.
-─────────────────────────────────────────────────────────
+  Press Ctrl+C to stop everything.
+---------------------------------------------------------
 """)
 
     signal.signal(signal.SIGINT, _shutdown)
@@ -135,7 +135,7 @@ def main():
 
     # Start all services
     for svc in SERVICES:
-        print(_prefix(svc["name"], f"Starting → {' '.join(svc['cmd'])}"))
+        print(_prefix(svc["name"], f"Starting -> {' '.join(svc['cmd'])}"))
         proc = _start_service(svc)
         _procs.append(proc)
         time.sleep(1.5)   # stagger starts so API is up before dashboard

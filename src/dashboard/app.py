@@ -43,8 +43,7 @@ def fmt_ist(dt) -> str:
 st.set_page_config(
     page_title="FinPulse — Sentiment Intelligence",
     page_icon="⚡",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="wide"
 )
 
 # ─────────────────────────────────────────────
@@ -59,6 +58,8 @@ st.markdown("""
 
 /* ── TOKENS ─────────────────────────────────────────── */
 :root {
+  font-size: 110%;
+  
   /* Deep purple background system matching screenshot */
   --bg-base:      #0D0B1E;
   --bg-mid:       #12102A;
@@ -460,6 +461,7 @@ hr {
   border-radius: 14px;
   padding: 1.2rem 1.5rem;
   margin: 1rem 0;
+  max-width: 50%;
 }
 .fp-legend-title {
   font-size: 0.6rem;
@@ -839,27 +841,48 @@ def apply_chart_theme(fig, title="", height=380):
         height=height)
     return fig
 
-def render_legend():
-    st.markdown("""
-    <div class="fp-legend">
-        <div class="fp-legend-title">Signal Reference — Sentiment Score Thresholds</div>
-        <div class="fp-legend-row">
-            <span class="fp-badge fp-badge-buy">BUY</span>
-            <span>Score &gt; +0.30 &nbsp;·&nbsp; Strong positive news sentiment — review for upside potential</span>
+def render_legend(ticker=None):
+    col1, col2 = st.columns([2.5, 1], gap="large")
+    with col1:
+        st.markdown("""
+        <div class="fp-legend">
+            <div class="fp-legend-title">Signal Reference — Sentiment Score Thresholds</div>
+            <div class="fp-legend-row">
+                <span class="fp-badge fp-badge-buy">BUY</span>
+                <span>Score &gt; +0.30 &nbsp;·&nbsp; Strong positive news sentiment — review for upside potential</span>
+            </div>
+            <div class="fp-legend-row">
+                <span class="fp-badge fp-badge-hold">HOLD</span>
+                <span>Score −0.15 to +0.30 &nbsp;·&nbsp; Mixed or neutral — wait for clearer signals</span>
+            </div>
+            <div class="fp-legend-row">
+                <span class="fp-badge fp-badge-sell">SELL</span>
+                <span>Score &lt; −0.15 &nbsp;·&nbsp; Predominantly negative news — exercise caution</span>
+            </div>
+            <div style="font-size:0.65rem;color:#2a3140;margin-top:0.7rem;font-family:'DM Mono',monospace">
+                SOURCE WEIGHTS &nbsp;·&nbsp; Reuters 1.00 &nbsp;·&nbsp; CNBC 0.95 &nbsp;·&nbsp; Yahoo Finance 0.90 &nbsp;·&nbsp; NewsAPI 0.85
+            </div>
         </div>
-        <div class="fp-legend-row">
-            <span class="fp-badge fp-badge-hold">HOLD</span>
-            <span>Score −0.15 to +0.30 &nbsp;·&nbsp; Mixed or neutral — wait for clearer signals</span>
-        </div>
-        <div class="fp-legend-row">
-            <span class="fp-badge fp-badge-sell">SELL</span>
-            <span>Score &lt; −0.15 &nbsp;·&nbsp; Predominantly negative news — exercise caution</span>
-        </div>
-        <div style="font-size:0.65rem;color:#2a3140;margin-top:0.7rem;font-family:'DM Mono',monospace">
-            SOURCE WEIGHTS &nbsp;·&nbsp; Reuters 1.00 &nbsp;·&nbsp; CNBC 0.95 &nbsp;·&nbsp; Yahoo Finance 0.90 &nbsp;·&nbsp; NewsAPI 0.85
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+        
+    with col2:
+        news_resp = fetch_news(ticker=ticker, limit=3)
+        news = news_resp.get("data", []) if news_resp else []
+        if news:
+            st.markdown('<div style="font-size: 0.65rem; color: #5B578A; letter-spacing: 0.05em; font-weight: 600; font-family: \'Inter\', sans-serif; margin-bottom: 0.5rem; text-transform: uppercase;">Today"s Top Recent Headlines</div>', unsafe_allow_html=True)
+            for h in news:
+                label_color = "#2ECC71" if h.get("sentiment_label") == "positive" else ("#E74C3C" if h.get("sentiment_label") == "negative" else "#5B578A")
+                timestamp = fmt_ist(h.get('timestamp')) if 'timestamp' in h else ''
+                st.markdown(f"""
+                <div style="background: rgba(255,255,255,0.03); padding: 0.6rem 0.8rem; border-radius: 4px; margin-bottom: 0.4rem; border-left: 2px solid {label_color};">
+                    <div style="font-size: 0.85rem; color: #F1F0FF; margin-bottom: 0.2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        <a href="{h.get('url', '#')}" target="_blank" style="color: inherit; text-decoration: none;">{h.get('headline')}</a>
+                    </div>
+                    <div style="font-size: 0.65rem; color: #5B578A; font-family: 'DM Mono', monospace;">
+                        {h.get('source', '').upper()} &nbsp;•&nbsp; {timestamp}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
 
 def render_insight_card(ticker: str, name: str, score: float, pos: int, neg: int, neu: int,
                         total: int, days: int, trend: str = "stable",
@@ -950,63 +973,7 @@ def render_insight_card(ticker: str, name: str, score: float, pos: int, neg: int
     </div>
     """, unsafe_allow_html=True)
 
-# ─────────────────────────────────────────────
-# Sidebar
-# ─────────────────────────────────────────────
-def render_sidebar():
-    with st.sidebar:
-        st.markdown("""
-        <div class="fp-logo">
-            <span class="fp-logo-mark">FP/</span>
-            <span class="fp-logo-sub">Sentiment Intel</span>
-        </div>
-        """, unsafe_allow_html=True)
 
-        st.markdown('<div class="fp-sidebar-section">Live Statistics</div>', unsafe_allow_html=True)
-        summary = fetch_dashboard_summary()
-        if summary:
-            d = summary.get("summary", {})
-            avg_sent = d.get("avg_sentiment_24h", 0.0)
-            st.markdown(f"""
-            <div class="fp-stat">
-                <div class="fp-stat-label">Articles (7d)</div>
-                <div class="fp-stat-value">{d.get('total_news_24h', 0):,}</div>
-            </div>
-            <div class="fp-stat">
-                <div class="fp-stat-label">Active Tickers</div>
-                <div class="fp-stat-value">{d.get('total_tickers_24h', 0)}</div>
-            </div>
-            <div class="fp-stat">
-                <div class="fp-stat-label">Market Sentiment</div>
-                <div class="fp-stat-value" style="color:{sentiment_color(avg_sent)}">{avg_sent:+.3f}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.caption("API unavailable — start the backend server")
-
-        st.divider()
-        st.markdown('<div class="fp-sidebar-section">Controls</div>', unsafe_allow_html=True)
-        if st.button("↺  Refresh Data", use_container_width=True):
-            st.cache_data.clear()
-            st.rerun()
-
-        st.divider()
-        st.markdown('<div class="fp-sidebar-section">Data Sources</div>', unsafe_allow_html=True)
-        st.markdown("""
-        <div style='font-family:"DM Mono",monospace;font-size:0.72rem;color:#3C4558;line-height:2.4'>
-        Reuters &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1.00<br>
-        CNBC &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0.95<br>
-        Yahoo Finance  0.90<br>
-        NewsAPI &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0.85
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.divider()
-        st.markdown(f"""
-        <div style="font-size:0.65rem;color:#3C4558;font-family:'DM Mono',monospace">
-            <span class="fp-dot"></span>API ONLINE &nbsp;·&nbsp;
-            {datetime.now(IST).strftime("%H:%M IST")}
-        </div>""", unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
 # Tab 1 — Overview
@@ -1221,7 +1188,14 @@ def render_ticker_analysis():
         fig.add_hline(y=0, line=dict(color="rgba(255,255,255,0.05)", width=1, dash="dot"))
         apply_chart_theme(fig, f"{name} — Sentiment Trend (IST)")
         fig.update_layout(xaxis=dict(tickformat="%d %b %H:%M"))
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+        
+        selection = st.plotly_chart(
+            fig, 
+            use_container_width=True, 
+            config={"displayModeBar": False},
+            on_select="rerun",
+            selection_mode="points"
+        )
 
     with right:
         fig2 = go.Figure(go.Pie(
@@ -1237,7 +1211,26 @@ def render_ticker_analysis():
                 font=dict(size=20, color=sentiment_color(avg), family="DM Mono"))])
         st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
 
-    render_legend()
+    # Show clicked news
+    selected_points = selection.get("selection", {}).get("points", []) if selection else []
+    if selected_points:
+        point_idx = selected_points[0].get("point_index")
+        if point_idx is not None and 0 <= point_idx < len(contributing_list):
+            articles = contributing_list[point_idx]
+            if articles:
+                st.markdown(f'<div class="fp-eyebrow" style="margin-top: 1rem;">News for {fmt_ist(df.iloc[point_idx]["timestamp"])}</div>', unsafe_allow_html=True)
+                for art in articles:
+                    label_color = "#2ECC71" if art.get("label") == "positive" else ("#E74C3C" if art.get("label") == "negative" else "#F5A623")
+                    st.markdown(f"""
+                    <div style="padding: 0.8rem; background: rgba(255,255,255,0.03); border-left: 3px solid {label_color}; margin-bottom: 0.5rem; border-radius: 4px;">
+                        <div style="font-size: 0.75rem; color: #9B96C9; margin-bottom: 0.2rem; font-family: 'DM Mono', monospace;">
+                            [{art.get('source', '?').upper()}] &nbsp;•&nbsp; Score: {art.get('score', 0):+.4f}
+                        </div>
+                        <a href="{art.get('url', '#')}" target="_blank" style="color: #F1F0FF; text-decoration: none; font-size: 0.95rem;">{art.get('headline', '')}</a>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+    render_legend(ticker=ticker)
 
     if len(df) >= 2:
         recent = df["avg_sentiment"].iloc[-3:].mean()
@@ -1384,60 +1377,132 @@ def render_signals():
 # ─────────────────────────────────────────────
 # Tab 4 — Radar & Correlation (inside Overview tab)
 # ─────────────────────────────────────────────
-def render_radar():
-    st.markdown('<div class="fp-eyebrow">Sentiment Anomaly Radar</div>', unsafe_allow_html=True)
-    st.caption("Detects sudden spikes in news volume or extreme 24h sentiment shifts.")
-
+def render_pe_chart():
+    st.markdown('<div class="fp-eyebrow">Dynamic PE Chart</div>', unsafe_allow_html=True)
+    st.caption("Historical Trailing P/E based on 1-Month Prices.")
+    
+    import yfinance as yf
+    
     options = get_ticker_options()
-    all_tickers = [o[1] for o in options]
+    ticker_labels = [o[0] for o in options]
+    
+    selected_label = st.selectbox("Select Ticker", ticker_labels, label_visibility="collapsed")
+    selected_ticker = next(o[1] for o in options if o[0] == selected_label)
+    
+    with st.spinner(f"Calculating P/E for {selected_ticker}..."):
+        try:
+            t = yf.Ticker(selected_ticker)
+            info = t.info
+            eps = info.get("trailingEps")
+            
+            if not eps or eps <= 0:
+                st.warning(f"No positive EPS data available for {selected_ticker}.")
+                return
+                
+            hist = t.history(period="1mo")
+            if hist.empty:
+                st.warning(f"No price history available for {selected_ticker}.")
+                return
+                
+            hist["PE"] = hist["Close"] / eps
+            
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=hist.index,
+                y=hist["PE"],
+                fill='tozeroy',
+                mode='lines',
+                line=dict(color='#22D3EE', width=2),
+                fillcolor='rgba(34, 211, 238, 0.15)',
+                name="P/E Ratio"
+            ))
+            
+            fig.update_layout(
+                margin=dict(l=0, r=0, t=10, b=0),
+                height=250,
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                xaxis=dict(
+                    showgrid=False,
+                    color="#5B578A",
+                    tickfont=dict(family="DM Mono", size=10)
+                ),
+                yaxis=dict(
+                    showgrid=True,
+                    gridcolor="rgba(255,255,255,0.05)",
+                    color="#5B578A",
+                    tickfont=dict(family="DM Mono", size=10)
+                )
+            )
+            
+            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+            
+        except Exception as e:
+            st.error(f"Error fetching P/E data: {e}")
 
-    anomalies = []
-    correlations = []
+# ─────────────────────────────────────────────
+# Tab 4 — Radar & Correlation (inside Overview tab)
+# ─────────────────────────────────────────────
+def render_radar():
+    col1, col2 = st.columns(2, gap="large")
+    
+    with col1:
+        st.markdown('<div class="fp-eyebrow">Sentiment Anomaly Radar</div>', unsafe_allow_html=True)
+        st.caption("Detects sudden spikes in news volume or extreme 24h sentiment shifts.")
 
-    with st.spinner("Scanning market for anomalies..."):
-        for ticker in all_tickers:
-            sentiment_data = fetch_sentiment(ticker, days=7)
-            if sentiment_data and sentiment_data.get("data"):
-                df = pd.DataFrame(sentiment_data["data"])
-                df["date"] = pd.to_datetime(df["timestamp"], format="ISO8601").dt.date
-                daily = df.groupby("date").agg({"news_count": "sum", "avg_sentiment": "mean"}).reset_index()
+        options = get_ticker_options()
+        all_tickers = [o[1] for o in options]
 
-                if len(daily) >= 2:
-                    today = daily.iloc[-1]
-                    history = daily.iloc[:-1]
-                    avg_vol = history["news_count"].mean()
-                    avg_sent = history["avg_sentiment"].mean()
+        anomalies = []
+        correlations = []
 
-                    if avg_vol > 0 and today["news_count"] > avg_vol * 2.0 and today["news_count"] >= 5:
-                        anomalies.append({
-                            "ticker": ticker, "type": "Volume Spike",
-                            "details": f"News volume jumped to {int(today['news_count'])} articles today (7d avg: {avg_vol:.1f})",
-                            "severity": "high"
-                        })
+        with st.spinner("Scanning market for anomalies..."):
+            for ticker in all_tickers:
+                sentiment_data = fetch_sentiment(ticker, days=7)
+                if sentiment_data and sentiment_data.get("data"):
+                    df = pd.DataFrame(sentiment_data["data"])
+                    df["date"] = pd.to_datetime(df["timestamp"], format="ISO8601").dt.date
+                    daily = df.groupby("date").agg({"news_count": "sum", "avg_sentiment": "mean"}).reset_index()
 
-                    if abs(today["avg_sentiment"] - avg_sent) > 0.4:
-                        swing_dir = "Drop" if today["avg_sentiment"] < avg_sent else "Surge"
-                        anomalies.append({
-                            "ticker": ticker, "type": f"Sentiment {swing_dir}",
-                            "details": f"Sentiment shifted from {avg_sent:+.2f} (7d avg) to {today['avg_sentiment']:+.2f} today",
-                            "severity": "critical" if swing_dir == "Drop" else "medium"
-                        })
+                    if len(daily) >= 2:
+                        today = daily.iloc[-1]
+                        history = daily.iloc[:-1]
+                        avg_vol = history["news_count"].mean()
+                        avg_sent = history["avg_sentiment"].mean()
 
-            corr_data = fetch_correlation(ticker, days=7)
-            if corr_data and "correlation" in corr_data:
-                correlations.append({"ticker": ticker, "correlation": corr_data["correlation"]})
+                        if avg_vol > 0 and today["news_count"] > avg_vol * 2.0 and today["news_count"] >= 5:
+                            anomalies.append({
+                                "ticker": ticker, "type": "Volume Spike",
+                                "details": f"News volume jumped to {int(today['news_count'])} articles today (7d avg: {avg_vol:.1f})",
+                                "severity": "high"
+                            })
 
-    if not anomalies:
-        st.success("✅ Market stable — no major sentiment swings or volume spikes detected today.")
-    else:
-        for anom in anomalies:
-            color = "#E74C3C" if anom["severity"] == "critical" else ("#F39C12" if anom["severity"] == "high" else "#2ECC71")
-            st.markdown(f"""
-            <div class="fp-anomaly" style="border-left:3px solid {color}">
-                <div class="fp-anomaly-title" style="color:{color}">{anom['ticker']} — {anom['type']}</div>
-                <div class="fp-anomaly-detail">{anom['details']}</div>
-            </div>
-            """, unsafe_allow_html=True)
+                        if abs(today["avg_sentiment"] - avg_sent) > 0.4:
+                            swing_dir = "Drop" if today["avg_sentiment"] < avg_sent else "Surge"
+                            anomalies.append({
+                                "ticker": ticker, "type": f"Sentiment {swing_dir}",
+                                "details": f"Sentiment shifted from {avg_sent:+.2f} (7d avg) to {today['avg_sentiment']:+.2f} today",
+                                "severity": "critical" if swing_dir == "Drop" else "medium"
+                            })
+
+                corr_data = fetch_correlation(ticker, days=7)
+                if corr_data and "correlation" in corr_data:
+                    correlations.append({"ticker": ticker, "correlation": corr_data["correlation"]})
+
+        if not anomalies:
+            st.success("✅ Market stable — no major sentiment swings or volume spikes detected today.")
+        else:
+            for anom in anomalies:
+                color = "#E74C3C" if anom["severity"] == "critical" else ("#F39C12" if anom["severity"] == "high" else "#2ECC71")
+                st.markdown(f"""
+                <div class="fp-anomaly" style="border-left:3px solid {color}">
+                    <div class="fp-anomaly-title" style="color:{color}">{anom['ticker']} — {anom['type']}</div>
+                    <div class="fp-anomaly-detail">{anom['details']}</div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+    with col2:
+        render_pe_chart()
 
     st.divider()
     st.markdown('<div class="fp-eyebrow">Top 2 Gainers — Indian Market</div>', unsafe_allow_html=True)
@@ -1531,11 +1596,42 @@ def render_news_feed():
         """, unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
+# AI Assistant
+# ─────────────────────────────────────────────
+def render_ai_assistant():
+    st.markdown('<div class="fp-eyebrow">FinPulse AI Assistant</div>', unsafe_allow_html=True)
+    st.caption("Domain-restricted natural language interface powered by Qwen3:4b.")
+
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+
+    for msg in st.session_state.messages:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+    if prompt := st.chat_input("Ask about sentiment, anomalies, or recent news..."):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        with st.chat_message("assistant"):
+            with st.spinner("Analyzing Database..."):
+                try:
+                    res = requests.post(f"{API_URL}/assistant/chat", json={"question": prompt}, timeout=300)
+                    if res.status_code == 200:
+                        reply = res.json().get("response", "No response.")
+                    else:
+                        reply = f"Error: {res.text}"
+                except Exception as e:
+                    reply = f"Connection failed: {e}"
+                
+                st.markdown(reply)
+        st.session_state.messages.append({"role": "assistant", "content": reply})
+
+# ─────────────────────────────────────────────
 # Main
 # ─────────────────────────────────────────────
 def main():
-    render_sidebar()
-
     st.markdown("""
     <div class="fp-hero">
         <div class="fp-hero-tag">⚡ Real-Time Intelligence Platform</div>
@@ -1546,7 +1642,7 @@ def main():
     </div>
     """, unsafe_allow_html=True)
 
-    tabs = st.tabs(["Overview", "Ticker Analysis", "Signals", "News Feed"])
+    tabs = st.tabs(["Overview", "Ticker Analysis", "Signals", "News Feed", "AI Assistant"])
     with tabs[0]:
         render_overview()
         st.write("---")
@@ -1554,6 +1650,7 @@ def main():
     with tabs[1]: render_ticker_analysis()
     with tabs[2]: render_signals()
     with tabs[3]: render_news_feed()
+    with tabs[4]: render_ai_assistant()
 
     st.divider()
     c1, c2, c3 = st.columns(3)
