@@ -47,656 +47,24 @@ st.set_page_config(
 )
 
 # ─────────────────────────────────────────────
-# NEW UI — Design System
-# Palette: Obsidian black + Electric amber + Ice white
-# Type: DM Mono (data) + Inter (UI) — terminal-meets-trading-floor
-# Signature: Amber "ticker tape" accent line that runs through every card
+from themes.theme_manager import THEMES, get_theme_css, get_chart_theme, get_sentiment_scale
+
 # ─────────────────────────────────────────────
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Mono:ital,wght@0,300;0,400;0,500&display=swap');
+# Theme Setup
+# ─────────────────────────────────────────────
+if "selected_theme" not in st.session_state:
+    st.session_state.selected_theme = "FinPulse Dark"
 
-/* ── TOKENS ─────────────────────────────────────────── */
-:root {
-  font-size: 110%;
-  
-  /* Deep purple background system matching screenshot */
-  --bg-base:      #0D0B1E;
-  --bg-mid:       #12102A;
-  --bg-panel:     #16133A;
-  --glass:        rgba(255,255,255,0.035);
-  --glass-hover:  rgba(255,255,255,0.06);
-  --glass-border: rgba(255,255,255,0.08);
-  --glass-border-bright: rgba(255,255,255,0.15);
+css = get_theme_css(st.session_state.selected_theme)
+st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
 
-  /* Purple accent — the hero color from the screenshot */
-  --purple:       #7C5CFC;
-  --purple-light: #A78BFA;
-  --purple-dim:   rgba(124,92,252,0.15);
-  --purple-mid:   rgba(124,92,252,0.4);
-  --purple-glow:  rgba(124,92,252,0.25);
-
-  /* Secondary accent — cyan highlight */
-  --cyan:         #22D3EE;
-  --cyan-dim:     rgba(34,211,238,0.12);
-
-  /* Semantic colors */
-  --green:  #10B981;
-  --red:    #EF4444;
-  --yellow: #F59E0B;
-  --blue:   #3B82F6;
-
-  /* Text */
-  --text-primary:   #F1F0FF;
-  --text-secondary: #9B96C9;
-  --text-muted:     #5B578A;
-
-  /* Font stacks */
-  --mono: 'DM Mono', monospace;
-  --sans: 'Inter', sans-serif;
-}
-
-/* ── RESET / BASE ───────────────────────────────────── */
-html, body, [class*="css"] {
-  font-family: var(--sans);
-  color: var(--text-primary);
-}
-.main .block-container {
-  padding: 2rem 2.5rem 4rem;
-  max-width: 1600px;
-}
-.stApp {
-  background: linear-gradient(135deg, #0D0B1E 0%, #12102A 40%, #0D0E2E 100%);
-  background-attachment: fixed;
-}
-/* Subtle radial glow behind everything like the screenshot */
-.stApp::before {
-  content: '';
-  position: fixed;
-  top: -20%;
-  left: 30%;
-  width: 60%;
-  height: 60%;
-  background: radial-gradient(ellipse, rgba(124,92,252,0.12) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* ── SIDEBAR ────────────────────────────────────────── */
-[data-testid="stSidebar"] {
-  background: rgba(10,8,28,0.95);
-  backdrop-filter: blur(24px);
-  border-right: 1px solid var(--glass-border);
-}
-[data-testid="stSidebar"] .block-container {
-  padding: 1.6rem 1.1rem;
-}
-
-/* Sidebar logo — FinPulse brand mark */
-.fp-logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 2rem;
-  padding: 0.5rem 0.4rem;
-}
-.fp-logo-icon {
-  width: 34px;
-  height: 34px;
-  background: var(--purple-dim);
-  border: 1px solid var(--purple-mid);
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-  color: var(--purple-light);
-}
-.fp-logo-mark {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: -0.02em;
-}
-.fp-logo-sub {
-  font-size: 0.58rem;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  line-height: 1;
-}
-
-/* Sidebar stat blocks — glass pills like the screenshot */
-.fp-stat {
-  padding: 0.8rem 1rem;
-  margin-bottom: 0.5rem;
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
-  border-radius: 12px;
-  transition: background 0.2s, border-color 0.2s;
-}
-.fp-stat:hover {
-  background: var(--glass-hover);
-  border-color: var(--glass-border-bright);
-}
-.fp-stat-label {
-  font-size: 0.6rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  margin-bottom: 0.3rem;
-}
-.fp-stat-value {
-  font-family: var(--mono);
-  font-size: 1.3rem;
-  font-weight: 500;
-  color: var(--text-primary);
-  line-height: 1;
-}
-
-/* Sidebar section label */
-.fp-sidebar-section {
-  font-size: 0.58rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  padding: 0 0.4rem 0.4rem;
-  border-bottom: 1px solid var(--glass-border);
-  margin: 1.2rem 0 0.7rem;
-}
-
-/* Status dot */
-@keyframes pulse {
-  0%,100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.6); }
-  50%      { box-shadow: 0 0 0 4px rgba(16,185,129,0); }
-}
-.fp-dot {
-  display: inline-block;
-  width: 7px; height: 7px;
-  background: var(--green);
-  border-radius: 50%;
-  margin-right: 7px;
-  animation: pulse 2s ease-in-out infinite;
-}
-
-/* ── TYPOGRAPHY ─────────────────────────────────────── */
-h1,h2,h3 { font-family: var(--sans) !important; }
-h1 { font-size: 2rem !important; font-weight: 700 !important; color: var(--text-primary) !important; letter-spacing: -0.03em; }
-h2 { font-size: 1.3rem !important; font-weight: 600 !important; color: var(--text-primary) !important; }
-h3 { font-size: 0.88rem !important; font-weight: 500 !important; color: var(--text-secondary) !important; }
-
-/* Section eyebrow label — tight uppercase with fade line */
-.fp-eyebrow {
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-.fp-eyebrow::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(to right, var(--glass-border-bright), transparent);
-}
-
-/* ── METRIC CARDS — glassmorphism like screenshot ───── */
-[data-testid="stMetric"] {
-  background: var(--glass);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--glass-border);
-  border-radius: 16px;
-  padding: 1.2rem 1.4rem;
-  transition: background 0.25s, border-color 0.25s, transform 0.25s;
-  position: relative;
-  overflow: hidden;
-}
-/* Subtle purple top glow on each card */
-[data-testid="stMetric"]::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(to right, transparent, var(--purple-mid), transparent);
-}
-[data-testid="stMetric"]:hover {
-  background: var(--glass-hover);
-  border-color: var(--glass-border-bright);
-  transform: translateY(-3px);
-}
-[data-testid="stMetricLabel"] {
-  font-size: 0.65rem !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-muted) !important;
-}
-[data-testid="stMetricValue"] {
-  font-family: var(--mono) !important;
-  font-size: 1.75rem !important;
-  font-weight: 500 !important;
-  color: var(--text-primary) !important;
-}
-[data-testid="stMetricDelta"] {
-  font-family: var(--mono) !important;
-  font-size: 0.78rem !important;
-}
-
-/* ── TABS — pill style like screenshot nav ───────────── */
-[data-testid="stTabs"] [role="tablist"] {
-  background: rgba(0,0,0,0.3);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
-  border-radius: 12px;
-  padding: 5px;
-  gap: 3px;
-}
-[data-testid="stTabs"] [role="tab"] {
-  font-size: 0.8rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  color: var(--text-muted);
-  border-radius: 9px;
-  padding: 0.55rem 1.3rem;
-  border: none;
-  background: transparent;
-  transition: all 0.2s;
-}
-[data-testid="stTabs"] [role="tab"][aria-selected="true"] {
-  background: var(--purple-dim);
-  color: var(--purple-light);
-  border: 1px solid var(--purple-mid);
-  box-shadow: 0 0 16px var(--purple-glow);
-}
-[data-testid="stTabs"] [role="tab"]:hover:not([aria-selected="true"]) {
-  color: var(--text-secondary);
-  background: var(--glass);
-}
-
-/* ── BUTTONS ────────────────────────────────────────── */
-.stButton > button {
-  background: linear-gradient(135deg, var(--purple) 0%, #9B8AFC 100%);
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 0.5rem 1.5rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  transition: all 0.2s;
-  box-shadow: 0 4px 20px var(--purple-glow);
-}
-.stButton > button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 28px rgba(124,92,252,0.45);
-  filter: brightness(1.1);
-}
-
-/* ── INPUTS ─────────────────────────────────────────── */
-.stSelectbox > div > div,
-.stTextInput > div > div {
-  background: rgba(0,0,0,0.3) !important;
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border) !important;
-  border-radius: 10px !important;
-  color: var(--text-primary) !important;
-  transition: border-color 0.2s;
-}
-.stSelectbox > div > div:hover,
-.stTextInput > div > div:hover {
-  border-color: var(--purple-mid) !important;
-}
-
-/* ── DATAFRAME ──────────────────────────────────────── */
-[data-testid="stDataFrame"] {
-  border: 1px solid var(--glass-border);
-  border-radius: 14px;
-  overflow: hidden;
-  background: var(--glass);
-  backdrop-filter: blur(12px);
-}
-[data-testid="stDataFrame"] thead th {
-  background: rgba(0,0,0,0.4) !important;
-  color: var(--text-muted) !important;
-  font-size: 0.65rem !important;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  font-weight: 600 !important;
-  border-bottom: 1px solid var(--glass-border);
-}
-
-/* ── DIVIDER ────────────────────────────────────────── */
-hr {
-  border: none;
-  border-top: 1px solid var(--glass-border);
-  margin: 1.8rem 0;
-}
-
-/* ── HERO — deep dark panel like the screenshot ─────── */
-.fp-hero {
-  padding: 2.2rem 2.8rem;
-  margin-bottom: 2rem;
-  background: rgba(0,0,0,0.35);
-  backdrop-filter: blur(24px);
-  border: 1px solid var(--glass-border);
-  border-radius: 20px;
-  position: relative;
-  overflow: hidden;
-}
-/* Top purple gradient glow — matches screenshot header feel */
-.fp-hero::before {
-  content: '';
-  position: absolute;
-  top: -60px; left: -60px;
-  width: 300px; height: 200px;
-  background: radial-gradient(ellipse, rgba(124,92,252,0.3) 0%, transparent 70%);
-  pointer-events: none;
-}
-/* Right-side faint glow too */
-.fp-hero::after {
-  content: '';
-  position: absolute;
-  top: -40px; right: 5%;
-  width: 200px; height: 180px;
-  background: radial-gradient(ellipse, rgba(34,211,238,0.15) 0%, transparent 70%);
-  pointer-events: none;
-}
-.fp-hero-tag {
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  color: var(--purple-light);
-  text-transform: uppercase;
-  margin-bottom: 0.9rem;
-  position: relative;
-  z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-.fp-hero-tag::before {
-  content: '';
-  width: 18px; height: 2px;
-  background: var(--purple-light);
-  border-radius: 2px;
-}
-.fp-hero-title {
-  font-size: 2.6rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: -0.04em;
-  line-height: 1.05;
-  margin-bottom: 0.8rem;
-  position: relative;
-  z-index: 1;
-}
-.fp-hero-title span {
-  /* Purple-to-cyan gradient text like the screenshot headline */
-  background: linear-gradient(to right, var(--purple-light), var(--cyan));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-.fp-hero-desc {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  font-weight: 400;
-  max-width: 520px;
-  line-height: 1.65;
-  position: relative;
-  z-index: 1;
-}
-
-/* ── LEGEND CARD ────────────────────────────────────── */
-.fp-legend {
-  background: var(--glass);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
-  border-radius: 14px;
-  padding: 1.2rem 1.5rem;
-  margin: 1rem 0;
-  max-width: 100%;
-}
-.fp-legend-title {
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  margin-bottom: 1rem;
-}
-.fp-legend-row {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 0.6rem;
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-}
-.fp-badge {
-  border-radius: 6px;
-  padding: 0.18rem 0.65rem;
-  font-family: var(--mono);
-  font-size: 0.68rem;
-  font-weight: 500;
-  min-width: 44px;
-  text-align: center;
-}
-.fp-badge-buy  { background: rgba(16,185,129,0.12); color: #34D399; border: 1px solid rgba(16,185,129,0.2); }
-.fp-badge-sell { background: rgba(239,68,68,0.12);  color: #F87171; border: 1px solid rgba(239,68,68,0.2); }
-.fp-badge-hold { background: rgba(245,158,11,0.12); color: #FCD34D; border: 1px solid rgba(245,158,11,0.2); }
-
-/* ── INSIGHT CARD — glass panel ─────────────────────── */
-.fp-insight {
-  background: rgba(124,92,252,0.06);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(124,92,252,0.2);
-  border-radius: 16px;
-  padding: 1.6rem 1.8rem;
-  margin: 1.5rem 0;
-  position: relative;
-  overflow: hidden;
-}
-/* Purple accent strip top like a real card panel */
-.fp-insight::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-  background: linear-gradient(to right, var(--purple), var(--cyan), transparent);
-}
-.fp-insight-header {
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--purple-light);
-  margin-bottom: 0.9rem;
-}
-.fp-insight-body {
-  font-size: 0.88rem;
-  color: var(--text-secondary);
-  line-height: 1.78;
-}
-.fp-insight-rec {
-  font-size: 1rem;
-  font-weight: 600;
-  margin-top: 1.1rem;
-}
-.fp-insight-disclaimer {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  margin-top: 0.9rem;
-  font-style: italic;
-  border-top: 1px solid var(--glass-border);
-  padding-top: 0.75rem;
-}
-
-/* ── NEWS CARDS — layered dark panels ───────────────── */
-.fp-news {
-  background: var(--glass);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
-  border-radius: 14px;
-  padding: 1rem 1.4rem;
-  margin-bottom: 0.65rem;
-  transition: background 0.2s, border-color 0.2s, transform 0.2s;
-}
-.fp-news:hover {
-  background: var(--glass-hover);
-  border-color: var(--glass-border-bright);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-}
-.fp-news-headline {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--text-primary);
-  line-height: 1.55;
-  margin-bottom: 0.5rem;
-}
-.fp-news-headline a { color: inherit; text-decoration: none; }
-.fp-news-headline a:hover { color: var(--purple-light); }
-.fp-news-meta {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-.fp-tag {
-  background: rgba(124,92,252,0.08);
-  border: 1px solid rgba(124,92,252,0.15);
-  border-radius: 5px;
-  padding: 0.12rem 0.5rem;
-  font-family: var(--mono);
-  font-size: 0.62rem;
-  color: var(--purple-light);
-}
-.fp-score-pos { color: #34D399; font-family: var(--mono); font-weight: 500; }
-.fp-score-neg { color: #F87171; font-family: var(--mono); font-weight: 500; }
-.fp-score-neu { color: var(--text-muted); font-family: var(--mono); font-weight: 500; }
-
-/* ── ANOMALY CARD ───────────────────────────────────── */
-.fp-anomaly {
-  background: var(--glass);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
-  border-radius: 12px;
-  padding: 1rem 1.3rem;
-  margin-bottom: 0.8rem;
-}
-.fp-anomaly-title {
-  font-size: 0.92rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 0.3rem;
-}
-.fp-anomaly-detail {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-
-/* ── GAINER CARD ────────────────────────────────────── */
-.fp-gainer {
-  background: rgba(16,185,129,0.06);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(16,185,129,0.18);
-  border-radius: 16px;
-  padding: 1.6rem;
-  text-align: center;
-}
-.fp-gainer-ticker {
-  font-family: var(--mono);
-  font-size: 1.45rem;
-  font-weight: 500;
-  color: var(--text-primary);
-  margin-bottom: 0.4rem;
-}
-.fp-gainer-change {
-  font-family: var(--mono);
-  font-size: 1.25rem;
-  font-weight: 500;
-  color: #34D399;
-}
-
-/* ── FOOTER ─────────────────────────────────────────── */
-.fp-footer-block {
-  background: var(--glass);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
-  border-radius: 12px;
-  padding: 1.2rem 1.4rem;
-}
-.fp-footer-title {
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--purple-light);
-  margin-bottom: 0.6rem;
-}
-.fp-footer-text {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  line-height: 2.1;
-}
-
-/* ── SCROLLBAR ──────────────────────────────────────── */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(124,92,252,0.3); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: var(--purple); }
-
-/* ── TREND SUGGESTION BOX ───────────────────────────── */
-.fp-trend-box {
-  margin-top: 1rem;
-  padding: 1rem 1.3rem;
-  background: var(--glass);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
-  border-radius: 12px;
-}
-.fp-trend-box-label {
-  color: var(--text-muted);
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  margin-bottom: 0.3rem;
-}
-.fp-trend-box-note {
-  color: var(--text-muted);
-  font-size: 0.7rem;
-  margin-top: 0.25rem;
-}
-</style>
-""", unsafe_allow_html=True)
+CHART_THEME = get_chart_theme(st.session_state.selected_theme)
+SENTIMENT_SCALE = get_sentiment_scale(st.session_state.selected_theme)
 
 # ─────────────────────────────────────────────
 # Constants
 # ─────────────────────────────────────────────
 API_URL = f"http://localhost:{settings.api_port}/api/v1"
-
-CHART_THEME = dict(
-    template="plotly_dark",
-    paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(family="Inter, sans-serif", color="#5C6370", size=11),
-    margin=dict(l=10, r=10, t=40, b=10),
-    xaxis=dict(gridcolor="rgba(255,255,255,0.04)", linecolor="rgba(255,255,255,0.06)"),
-    yaxis=dict(gridcolor="rgba(255,255,255,0.04)", linecolor="rgba(255,255,255,0.06)"),
-    hoverlabel=dict(bgcolor="#131720", bordercolor="#F5A623", font_size=12, font_family="Inter"),
-)
-
-SENTIMENT_SCALE = [[0.0,"#E74C3C"],[0.5,"#F39C12"],[1.0,"#2ECC71"]]
 
 BUY_THRESHOLD  =  0.30
 SELL_THRESHOLD = -0.15
@@ -799,6 +167,14 @@ def fetch_signals():
     except Exception as e: logger.error(e)
     return None
 
+@st.cache_data(ttl=3600)
+def get_usdinr_rate():
+    try:
+        import yfinance as yf
+        return float(yf.Ticker("INR=X").fast_info.last_price) or 83.5
+    except Exception:
+        return 83.5
+
 @st.cache_data(ttl=60)
 def fetch_live_price(ticker: str):
     try:
@@ -807,6 +183,13 @@ def fetch_live_price(ticker: str):
         price = float(fi.last_price) if fi.last_price is not None else None
         prev  = float(fi.previous_close) if fi.previous_close is not None else None
         if price is None: return None
+        
+        # Convert USD to INR if global ticker
+        if not ticker.endswith((".NS", ".BO")):
+            rate = get_usdinr_rate()
+            price *= rate
+            if prev is not None: prev *= rate
+
         ch  = price - prev if prev else 0.0
         chp = (ch / prev * 100) if prev else 0.0
         return {"price":price,"prev_close":prev,"change":ch,"change_pct":chp,
@@ -820,6 +203,12 @@ def fetch_price_history(ticker: str, period="5d", interval="1h"):
         import yfinance as yf
         hist = yf.Ticker(ticker).history(period=period, interval=interval)
         if hist.empty: return None
+        
+        if not ticker.endswith((".NS", ".BO")):
+            rate = get_usdinr_rate()
+            for col in ["Open", "High", "Low", "Close"]:
+                if col in hist.columns: hist[col] *= rate
+
         hist.index = hist.index.tz_localize(None) if hist.index.tzinfo else hist.index
         return hist
     except Exception as e: logger.error(e)
@@ -963,7 +352,6 @@ def render_insight_card(ticker: str, name: str, score: float, pos: int, neg: int
 
     st.markdown(f"""
     <div class="fp-insight">
-        <div class="fp-insight-header">⚡ AI INSIGHTS — {name}</div>
         <div class="fp-insight-body">
             {rec_text}
             <div style='margin-top:0.6rem;font-size:0.75rem;color:#3C4558;font-family:"DM Mono",monospace'>
@@ -1121,12 +509,12 @@ def render_ticker_analysis():
         p, ch, cp, pc = price_data["price"], price_data["change"], price_data["change_pct"], price_data["prev_close"]
         mc, vol = price_data["market_cap"], price_data["volume"]
         p1, p2, p3, p4 = st.columns(4)
-        p1.metric("Current Price", f"{'₹' if '.NS' in ticker else '$'}{p:,.2f}",
+        p1.metric("Current Price", f"₹{p:,.2f}",
                   delta=f"{ch:+.2f} ({cp:+.2f}%)", delta_color="normal" if ch >= 0 else "inverse")
-        p2.metric("Previous Close", f"{'₹' if '.NS' in ticker else '$'}{pc:,.2f}" if pc else "—")
+        p2.metric("Previous Close", f"₹{pc:,.2f}" if pc else "—")
         p3.metric("Market Cap",
-                  f"{'₹' if '.NS' in ticker else '$'}{mc/1e12:.2f}T" if mc and mc >= 1e12
-                  else f"{'₹' if '.NS' in ticker else '$'}{mc/1e9:.1f}B" if mc and mc >= 1e9
+                  f"₹{mc/1e12:.2f}T" if mc and mc >= 1e12
+                  else f"₹{mc/1e9:.1f}B" if mc and mc >= 1e9
                   else "—")
         p4.metric("Avg Volume (3M)", f"{vol/1e6:.1f}M" if vol and vol >= 1e6 else f"{vol:,.0f}" if vol else "—")
 
@@ -1297,7 +685,7 @@ def render_ticker_analysis():
         apply_chart_theme(fig_trend, f"{name} — 6-Month Price Trend", height=350)
         fig_trend.update_layout(
             xaxis=dict(tickformat="%b %Y"),
-            yaxis=dict(tickprefix="₹" if ".NS" in ticker else "$", tickfont=dict(family="DM Mono", size=10))
+            yaxis=dict(tickprefix="₹", tickfont=dict(family="DM Mono", size=10))
         )
         st.plotly_chart(fig_trend, use_container_width=True, config={"displayModeBar": False})
 
@@ -1314,23 +702,16 @@ def render_ticker_analysis():
     else:
         st.caption(f"Historical price trend unavailable for {ticker}.")
 
-    # ── Correlation
+    # ── Correlation Score (Standalone)
     st.divider()
-    st.markdown('<div class="fp-eyebrow">Price — Sentiment Correlation</div>', unsafe_allow_html=True)
     corr_data = fetch_correlation(ticker, days)
     if corr_data:
-        cv   = corr_data.get("correlation", 0.0)
-        dp   = corr_data.get("data_points", 0)
-        interp = corr_data.get("interpretation", "—")
-        cc1, cc2, cc3 = st.columns(3)
-        cc1.metric("Pearson Correlation", f"{cv:+.4f}")
-        cc2.metric("Data Points", dp)
-        with cc3:
-            if cv > 0.3:    st.success(interp)
-            elif cv < -0.3: st.error(interp)
-            else:            st.warning(interp)
+        cv = corr_data.get("correlation", 0.0)
+        st.metric("Pearson Correlation (Price vs Sentiment)", f"{cv:+.4f}")
     else:
-        st.caption("Not enough alignment data yet. Run more pipeline cycles.")
+        st.caption("Not enough alignment data yet for correlation.")
+
+
 
 # ─────────────────────────────────────────────
 # Tab 3 — Signals
@@ -1450,20 +831,16 @@ def render_pe_chart():
                 name="P/E Ratio"
             ))
             
+            fig.update_layout(**CHART_THEME)
             fig.update_layout(
                 margin=dict(l=0, r=0, t=10, b=0),
                 height=250,
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)',
                 xaxis=dict(
                     showgrid=False,
-                    color="#5B578A",
                     tickfont=dict(family="DM Mono", size=10)
                 ),
                 yaxis=dict(
                     showgrid=True,
-                    gridcolor="rgba(255,255,255,0.05)",
-                    color="#5B578A",
                     tickfont=dict(family="DM Mono", size=10)
                 )
             )
@@ -1520,9 +897,7 @@ def render_radar():
                                 "severity": "critical" if swing_dir == "Drop" else "medium"
                             })
 
-                corr_data = fetch_correlation(ticker, days=7)
-                if corr_data and "correlation" in corr_data:
-                    correlations.append({"ticker": ticker, "correlation": corr_data["correlation"]})
+
 
         if not anomalies:
             st.success("✅ Market stable — no major sentiment swings or volume spikes detected today.")
@@ -1652,6 +1027,16 @@ def main():
     </div>
     """, unsafe_allow_html=True)
 
+    with st.sidebar:
+        st.markdown('<div class="fp-sidebar-section">Settings</div>', unsafe_allow_html=True)
+        theme_names = list(THEMES.keys())
+        default_index = theme_names.index(st.session_state.selected_theme) if st.session_state.selected_theme in theme_names else 0
+        selected = st.selectbox("Dashboard Theme", theme_names, index=default_index, key="theme_selector")
+        if selected != st.session_state.selected_theme:
+            st.session_state.selected_theme = selected
+            st.rerun()
+
+
     tabs = st.tabs(["Overview", "Ticker Analysis", "Signals", "News Feed"])
     with tabs[0]:
         render_overview()
@@ -1661,29 +1046,7 @@ def main():
     with tabs[2]: render_signals()
     with tabs[3]: render_news_feed()
 
-    st.divider()
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        st.markdown("""
-        <div class="fp-footer-block">
-            <div class="fp-footer-title">Universe</div>
-            <div class="fp-footer-text">10 stocks across 5 sectors<br>8 Indian (NSE) + 2 Global<br>Real-time via RSS + NewsAPI</div>
-        </div>
-        """, unsafe_allow_html=True)
-    with c2:
-        st.markdown("""
-        <div class="fp-footer-block">
-            <div class="fp-footer-title">Pipeline</div>
-            <div class="fp-footer-text">Hybrid RSS + NewsAPI fetch<br>FinBERT sentiment scoring<br>Source-weighted aggregation</div>
-        </div>
-        """, unsafe_allow_html=True)
-    with c3:
-        st.markdown("""
-        <div class="fp-footer-block">
-            <div class="fp-footer-title">Disclaimer</div>
-            <div class="fp-footer-text">Educational analytics tool only.<br>Not investment advice.<br>Always consult a financial advisor.</div>
-        </div>
-        """, unsafe_allow_html=True)
+
 
 if __name__ == "__main__":
     main()
