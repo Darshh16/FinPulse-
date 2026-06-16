@@ -72,6 +72,8 @@ FinPulse is a comprehensive real-time financial news sentiment analysis platform
 - Price-sentiment correlation charts
 - Trading signals display
 - Live news feed with filtering
+- **Dynamic Theme System** (Dark, Bloomberg Terminal, Light modes)
+- **Live Currency Conversion** (Global stocks dynamically converted to INR via `yfinance` `INR=X`)
 
 ---
 
@@ -305,7 +307,7 @@ MODEL_NAME=ProsusAI/finbert
 | Module | Purpose |
 |--------|---------|
 | `src/data_sources/news_api.py` | NewsAPI integration |
-| `src/data_sources/yfinance_client.py` | Stock price fetching |
+| `src/data_sources/yfinance_client.py` | Stock price fetching & Currency Conversion |
 | `src/sentiment_engine/finbert_analyzer.py` | FinBERT sentiment analysis |
 | `src/ticker_mapping/ticker_mapper.py` | Company name to ticker mapping |
 | `src/streaming/pipeline.py` | Main streaming pipeline |
@@ -314,6 +316,7 @@ MODEL_NAME=ProsusAI/finbert
 | `src/api/main.py` | FastAPI application |
 | `src/api/routes.py` | API endpoints |
 | `src/dashboard/app.py` | Streamlit dashboard |
+| `src/dashboard/themes/` | Modular CSS for Dynamic Themes |
 | `src/database/models.py` | Database schemas |
 
 ---
