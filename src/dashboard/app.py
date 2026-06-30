@@ -64,7 +64,9 @@ SENTIMENT_SCALE = get_sentiment_scale(st.session_state.selected_theme)
 # ─────────────────────────────────────────────
 # Constants
 # ─────────────────────────────────────────────
-API_URL = f"http://localhost:{settings.api_port}/api/v1"
+import os
+# Read API_URL from environment variables for production (Streamlit Cloud), fallback to localhost for local dev
+API_URL = os.environ.get("API_URL", f"http://localhost:{settings.api_port}/api/v1")
 
 BUY_THRESHOLD  =  0.30
 SELL_THRESHOLD = -0.15
