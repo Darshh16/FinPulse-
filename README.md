@@ -1,5 +1,8 @@
 # FinPulse - Real-Time Financial News Sentiment Pipeline
 
+## Live Demo 
+**https://finpulse1.streamlit.app/**
+
 ## Project Overview
 
 FinPulse is a comprehensive real-time financial news sentiment analysis platform that:
