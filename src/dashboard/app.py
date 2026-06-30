@@ -12,6 +12,10 @@ from zoneinfo import ZoneInfo
 import requests
 import logging
 
+import yfinance as yf
+yf_session = requests.Session()
+yf_session.headers.update({"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
+
 
 logger = logging.getLogger(__name__)
 
@@ -152,7 +156,7 @@ def fetch_top_indian_gainers():
             "SUNPHARMA.NS", "MARUTI.NS", "NTPC.NS", "ASIANPAINT.NS", "ULTRACEMCO.NS",
             "POWERGRID.NS", "ONGC.NS", "TATASTEEL.NS", "COALINDIA.NS", "ADANIPORTS.NS"
         ]
-        data = yf.download(nifty_tickers, period="2d", progress=False)["Close"]
+        data = yf.download(nifty_tickers, period="2d", progress=False, session=yf_session)["Close"]
         if len(data) >= 2:
             changes = ((data.iloc[-1] - data.iloc[-2]) / data.iloc[-2]) * 100
             top2 = changes.nlargest(2)
@@ -173,7 +177,7 @@ def fetch_signals():
 def get_usdinr_rate():
     try:
         import yfinance as yf
-        return float(yf.Ticker("INR=X").fast_info.last_price) or 83.5
+        return float(yf.Ticker("INR=X", session=yf_session).fast_info.last_price) or 83.5
     except Exception:
         return 83.5
 
@@ -181,7 +185,7 @@ def get_usdinr_rate():
 def fetch_live_price(ticker: str):
     try:
         import yfinance as yf
-        fi = yf.Ticker(ticker).fast_info
+        fi = yf.Ticker(ticker, session=yf_session).fast_info
         price = float(fi.last_price) if fi.last_price is not None else None
         prev  = float(fi.previous_close) if fi.previous_close is not None else None
         if price is None: return None
@@ -203,7 +207,7 @@ def fetch_live_price(ticker: str):
 def fetch_price_history(ticker: str, period="5d", interval="1h"):
     try:
         import yfinance as yf
-        hist = yf.Ticker(ticker).history(period=period, interval=interval)
+        hist = yf.Ticker(ticker, session=yf_session).history(period=period, interval=interval)
         if hist.empty: return None
         
         if not ticker.endswith((".NS", ".BO")):
@@ -465,7 +469,7 @@ def render_ticker_analysis():
     sentiment_data = fetch_sentiment(ticker, days)
 
     if not sentiment_data or not sentiment_data.get("data"):
-        st.warning(f"No sentiment data for **{name}** yet. Run the pipeline and `run_aggregation.py` to populate.")
+        st.warning(f"No sentiment data for **{name}** yet. Wait for the background pipeline to automatically scrape new articles.")
         return
 
     df = pd.DataFrame(sentiment_data["data"])
@@ -807,7 +811,7 @@ def render_pe_chart():
         
     with st.spinner(f"Calculating P/E for {selected_ticker}..."):
         try:
-            t = yf.Ticker(selected_ticker)
+            t = yf.Ticker(selected_ticker, session=yf_session)
             info = t.info
             eps = info.get("trailingEps")
             
