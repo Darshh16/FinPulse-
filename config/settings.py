@@ -69,7 +69,9 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self) -> str:
-        return f"postgresql://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
+        import urllib.parse
+        encoded_password = urllib.parse.quote_plus(self.db_password) if self.db_password else ""
+        return f"postgresql://{self.db_user}:{encoded_password}@{self.db_host}:{self.db_port}/{self.db_name}"
     
     class Config:
         env_file = ".env"
