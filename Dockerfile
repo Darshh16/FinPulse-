@@ -8,8 +8,8 @@ ENV PATH="/home/user/.local/bin:$PATH"
 WORKDIR /app
 
 # Copy requirements and install
-COPY --chown=user requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY --chown=user backend-requirements.txt .
+RUN pip install --no-cache-dir -r backend-requirements.txt
 
 # Copy the rest of the application
 COPY --chown=user . .
